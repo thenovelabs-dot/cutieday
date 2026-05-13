@@ -1,0 +1,22 @@
+
+[functions.disconnect-callback]
+enabled = true
+verify_jwt = true
+import_map = "./functions/disconnect-callback/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/disconnect-callback/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/disconnect-callback/*.html" ]
+
+[functions.toss-auth]
+enabled = true
+verify_jwt = true
+import_map = "./functions/toss-auth/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/toss-auth/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/toss-auth/*.html" ]
