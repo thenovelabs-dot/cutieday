@@ -1,62 +1,42 @@
-import { Asset, Button, Top } from "@toss/tds-mobile";
-import "./App.css";
+import { NavigationProvider, useNavigation } from "./lib/navigation";
+import IntroScreen from "./screens/IntroScreen";
+
+function Router() {
+  const { current, navigate } = useNavigation();
+
+  switch (current.screen) {
+    case "Intro":
+      return (
+        <IntroScreen
+          onLogin={() => {
+            // TODO: 토스 로그인 연동 후 신규/기존 유저 분기
+            navigate("OnboardingSpecies");
+          }}
+        />
+      );
+
+    // TODO: 아래 화면들은 구현 후 추가
+    case "OnboardingSpecies":
+    case "OnboardingName":
+    case "PhotoUpload":
+    case "HomeCamera":
+    case "HomeAlbum":
+    case "ImageAdjust":
+    case "PetEdit":
+    case "HomeMonth":
+    case "HomeWeek":
+    case "Wallpaper_Week":
+    case "Wallpaper_Month":
+    case "Downloading":
+      return <div style={{ padding: 24 }}>🚧 {current.screen} 구현 예정</div>;
+  }
+}
 
 function App() {
   return (
-    <>
-      <Top
-        title={<Top.TitleParagraph size={22}>반가워요</Top.TitleParagraph>}
-        subtitleBottom={
-          <Top.SubtitleParagraph size={17}>
-            앱인토스 개발을 시작해 보세요.
-          </Top.SubtitleParagraph>
-        }
-      />
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          padding: "24px",
-        }}
-      >
-        <Button
-          as="a"
-          variant="weak"
-          href="https://developers-apps-in-toss.toss.im"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          개발자센터
-        </Button>
-        <Button
-          as="a"
-          variant="weak"
-          href="https://techchat-apps-in-toss.toss.im"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          개발자 커뮤니티
-        </Button>
-      </div>
-
-      <div
-        style={{
-          position: "fixed",
-          bottom: "24px",
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
-      >
-        <Asset.Image
-          alt="apps in toss logo"
-          frameShape={{ width: 160 }}
-          backgroundColor="transparent"
-          src={`${import.meta.env.BASE_URL}appsintoss-logo.png`}
-        />
-      </div>
-    </>
+    <NavigationProvider>
+      <Router />
+    </NavigationProvider>
   );
 }
 
