@@ -1,4 +1,5 @@
 import { NavigationProvider, useNavigation } from "./lib/navigation";
+import { loginWithToss } from "./lib/tossLogin";
 import IntroScreen from "./screens/IntroScreen";
 
 function Router() {
@@ -8,9 +9,9 @@ function Router() {
     case "Intro":
       return (
         <IntroScreen
-          onLogin={() => {
-            // TODO: 토스 로그인 연동 후 신규/기존 유저 분기
-            navigate("OnboardingSpecies");
+          onLogin={async () => {
+            const { isNewUser } = await loginWithToss();
+            navigate(isNewUser ? "OnboardingSpecies" : "HomeMonth");
           }}
         />
       );
