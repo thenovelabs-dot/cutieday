@@ -19,6 +19,7 @@ export type Screen =
   // B담당
   | "HomeMonth"
   | "HomeWeek"
+  | "SuccessPopup"
   | "Wallpaper_Week"
   | "Wallpaper_Month"
   | "Downloading";
@@ -34,6 +35,7 @@ export type ScreenParams = {
   PetEdit: undefined;
   HomeMonth: undefined;
   HomeWeek: undefined;
+  SuccessPopup: { day: 4 | 7; petName: string };
   Wallpaper_Week: undefined;
   Wallpaper_Month: undefined;
   Downloading: { type: "week" | "month" };
