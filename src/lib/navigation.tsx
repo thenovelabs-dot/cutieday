@@ -18,9 +18,7 @@ export type Screen =
   | "PetEdit"
   // B담당
   | "HomeMonth"
-  | "HomeWeek"
-  | "Wallpaper_Week"
-  | "Wallpaper_Month"
+  | "Wallpaper"
   | "Downloading";
 
 export type ScreenParams = {
@@ -33,9 +31,7 @@ export type ScreenParams = {
   ImageAdjust: { uri: string };
   PetEdit: undefined;
   HomeMonth: undefined;
-  HomeWeek: undefined;
-  Wallpaper_Week: undefined;
-  Wallpaper_Month: undefined;
+  Wallpaper: { initialType?: "Week" | "Month" };
   Downloading: { type: "week" | "month" };
 };
 
@@ -62,7 +58,7 @@ export function NavigationProvider({
   children: React.ReactNode;
 }) {
   const [stack, setStack] = useState<NavEntry[]>([
-    { screen: "Intro", params: undefined },
+    { screen: "HomeMonth", params: undefined }, // TODO: 미리보기용 임시 변경 — 확인 후 "Intro"로 되돌릴 것
   ]);
 
   const stackRef = useRef(stack);

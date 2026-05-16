@@ -12,6 +12,14 @@ body {
   min-height: 100vh;
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (min-width: 481px) {
   body {
     display: flex;
