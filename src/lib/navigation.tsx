@@ -58,7 +58,7 @@ export function NavigationProvider({
   children: React.ReactNode;
 }) {
   const [stack, setStack] = useState<NavEntry[]>([
-    { screen: "HomeMonth", params: undefined }, // TODO: 미리보기용 임시 변경 — 확인 후 "Intro"로 되돌릴 것
+    { screen: "Wallpaper", params: undefined }, // TODO: 미리보기용 임시 변경 — 확인 후 "Intro"로 되돌릴 것
   ]);
 
   const stackRef = useRef(stack);

@@ -36,8 +36,22 @@ const CELL_W = 42.143;
 const CELL_H = 54.969;
 const GRID_COLS = 7;
 
+export type WallpaperFrameStyle =
+  | "Default"
+  | "Postcard"
+  | "Polaroid"
+  | "Apple"
+  | "Note"
+  | "Spark"
+  | "Star";
+
+export const WALLPAPER_STYLES: WallpaperFrameStyle[] = [
+  "Default", "Postcard", "Polaroid", "Apple", "Note", "Spark", "Star",
+];
+
 export interface WallpaperFrameProps {
   type: "week" | "month";
+  frameStyle?: WallpaperFrameStyle;
   previewContainer?: boolean;
   photoMap?: Record<string, string>;
   year: number;
@@ -317,6 +331,7 @@ function PreviewContainer({ month, previewDate }: { month: number; previewDate?:
 
 export default function WallpaperFrame({
   type,
+  frameStyle = "Default",
   previewContainer = true,
   photoMap,
   year,
