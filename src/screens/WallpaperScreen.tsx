@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigation } from "../lib/navigation";
 import { supabase } from "../lib/supabase";
 import SegmentText from "../components/SegmentText";
-import WallpaperFrame from "../components/WallpaperFrame";
+import WallpaperFrame, { WALLPAPER_STYLES } from "../components/WallpaperFrame";
 import ColorSelectUnit from "../components/ColorSelectUnit";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
@@ -10,24 +10,17 @@ import CalendarWeekPicker from "../components/CalendarWeekPicker";
 type WallpaperType = "Week" | "Month";
 type WallpaperColor = "Blue" | "Black" | "Gray";
 
-// 활성 아이템: 195×422 / 비활성: 176×381, top 20px 아래
-const ACTIVE_W = 195;
-const ACTIVE_H = 422;
-const INACTIVE_W = 176;
-const INACTIVE_H = 381;
-const INACTIVE_TOP = 20;
-const GAP = 12;
-// 아이템이 정중앙에 오도록 좌우 패딩: (375 - 195) / 2 = 90
-const CAROUSEL_PAD = (375 - ACTIVE_W) / 2; // 90
-// 스크롤 한 칸 = 아이템 너비 + 갭
-const SLOT_PITCH = ACTIVE_W + GAP; // 207
-const ACTIVE_SCALE = ACTIVE_W / 375;
-// 비활성 아이템의 CSS scale 값 (195 → 176)
-const INACTIVE_VISUAL_SCALE = INACTIVE_W / ACTIVE_W; // ≈ 0.903
-
 const GRADIENT_TOP = "/assets/wallpaper/gradient-top.png";
 
-const WALLPAPER_TYPES: WallpaperType[] = ["Week", "Month"];
+// ── 테스트용 더미 이미지 (TODO: 배포 전 제거) ──────────────────
+const _COLORS = ["#e63946","#457b9d","#2a9d8f","#e9c46a","#f4a261","#264653","#a8dadc","#6a4c93","#ff6b6b","#4ecdc4"];
+const _mkImg = (c: string) => `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='${encodeURIComponent(c)}'/%3E%3C/svg%3E`;
+const TEST_WEEK: Record<string, string> = Object.fromEntries(
+  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((k, i) => [k, _mkImg(_COLORS[i])])
+);
+const TEST_MONTH: Record<string, string> = Object.fromEntries(
+  Array.from({ length: 31 }, (_, i) => [String(i + 1), _mkImg(_COLORS[i % _COLORS.length])])
+);
 
 const COLOR_OPTIONS: { key: WallpaperColor; color: "Brand" | "Black" | "Gray"; bg: string }[] = [
   { key: "Blue",  color: "Brand", bg: "#508FE1" },
@@ -106,11 +99,34 @@ export default function WallpaperScreen() {
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
   const [petName, setPetName] = useState("");
 
+  const screenRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
-  // 스크롤 위치(0~SLOT_PITCH)를 실시간으로 추적해 style 계산에 사용
-  const [scrollX, setScrollX] = useState(
-    () => WALLPAPER_TYPES.indexOf(wallpaperType) * SLOT_PITCH,
-  );
+  const [scrollX, setScrollX] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(375);
+
+  useEffect(() => {
+    const el = screenRef.current;
+    if (!el) return;
+    const update = () => setContainerWidth(el.offsetWidth || 375);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // 컨테이너 너비 기준 캐러셀 치수 계산
+  const dims = useMemo(() => {
+    const activeW = Math.round(containerWidth * (195 / 375));
+    const activeH = Math.round(containerWidth * (422 / 375));
+    const inactiveW = Math.round(containerWidth * (176 / 375));
+    const inactiveTop = containerWidth * (20 / 375);
+    const gap = containerWidth * (12 / 375);
+    const carouselPad = (containerWidth - activeW) / 2;
+    const slotPitch = activeW + gap;
+    const activeScale = activeW / 375;
+    const inactiveVisualScale = inactiveW / activeW;
+    return { activeW, activeH, inactiveW, inactiveTop, gap, carouselPad, slotPitch, activeScale, inactiveVisualScale };
+  }, [containerWidth]);
 
   useEffect(() => {
     (async () => {
@@ -146,34 +162,23 @@ export default function WallpaperScreen() {
     })();
   }, [monthInfo]);
 
-  // 초기 스크롤 위치 설정
-  useEffect(() => {
-    const idx = WALLPAPER_TYPES.indexOf(wallpaperType);
-    const target = idx * SLOT_PITCH;
-    if (carouselRef.current) carouselRef.current.scrollLeft = target;
-    setScrollX(target);
-  }, []);
-
-  // 스크롤할 때마다 scrollX만 갱신 → style 실시간 반영
-  // wallpaperType은 탭 버튼으로만 변경 (스크롤로 바뀌지 않음)
   const handleScroll = useCallback(() => {
     const el = carouselRef.current;
     if (!el) return;
     setScrollX(el.scrollLeft);
   }, []);
 
-  // 탭 클릭 → wallpaperType 즉시 반영 + 스크롤 이동 (scrollX는 handleScroll이 갱신)
   const handleTabChange = useCallback((type: WallpaperType) => {
     setWallpaperType(type);
-    const idx = WALLPAPER_TYPES.indexOf(type);
-    carouselRef.current?.scrollTo({ left: idx * SLOT_PITCH, behavior: "smooth" });
   }, []);
 
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
   const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, currentYear);
+  const activeStyleIdx = Math.min(Math.max(Math.round(scrollX / dims.slotPitch), 0), WALLPAPER_STYLES.length - 1);
+  const selectedStyle = WALLPAPER_STYLES[activeStyleIdx];
 
   return (
-    <div style={s.screen}>
+    <div ref={screenRef} style={s.screen}>
       <div style={s.body}>
 
         {/* 날짜 헤더 + 세그먼트 탭 */}
@@ -207,25 +212,32 @@ export default function WallpaperScreen() {
           ref={carouselRef}
           onScroll={handleScroll}
           className="hide-scrollbar"
-          style={s.carousel}
+          style={{
+            ...s.carousel,
+            paddingLeft: dims.carouselPad,
+            paddingRight: dims.carouselPad,
+            gap: dims.gap,
+            height: dims.activeH,
+          }}
         >
-          {WALLPAPER_TYPES.map((type, idx) => {
-            // 스크롤 위치 기준으로 이 아이템이 중앙에서 얼마나 떨어져 있는지 (0 = 정중앙, 1 = 한 칸 옆)
-            const distance = Math.abs(idx - scrollX / SLOT_PITCH);
-            const t = Math.min(distance, 1); // 0 ~ 1 클램프
+          {WALLPAPER_STYLES.map((style, idx) => {
+            const distance = Math.abs(idx - scrollX / dims.slotPitch);
+            const t = Math.min(distance, 1);
 
-            const visualScale = 1 - (1 - INACTIVE_VISUAL_SCALE) * t;
+            const visualScale = 1 - (1 - dims.inactiveVisualScale) * t;
             const opacity = 1 - 0.4 * t;
-            const marginTop = INACTIVE_TOP * t;
-            const borderRadius = 24 - 2 * t; // 24 → 22
-            // 오른쪽 아이템: top-left origin / 왼쪽 아이템: top-right origin
-            const transformOrigin = idx >= scrollX / SLOT_PITCH ? "top left" : "top right";
+            const marginTop = dims.inactiveTop * t;
+            const borderRadius = 24 - 2 * t;
+            const transformOrigin = idx >= scrollX / dims.slotPitch ? "top left" : "top right";
 
             return (
-              <div key={type} style={s.slot}>
+              <div key={style} style={{ ...s.slot, width: dims.activeW, height: dims.activeH }}>
                 <div
                   style={{
-                    ...s.wallpaperCard,
+                    width: dims.activeW,
+                    height: dims.activeH,
+                    overflow: "hidden",
+                    position: "relative",
                     opacity,
                     transform: `scale(${visualScale})`,
                     transformOrigin,
@@ -233,15 +245,19 @@ export default function WallpaperScreen() {
                     borderRadius,
                   }}
                 >
-                  {/* WallpaperFrame은 항상 375×812로 렌더, ACTIVE_SCALE로 축소 */}
-                  <div style={s.frameInner}>
+                  <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
                     <WallpaperFrame
-                      type={type === "Week" ? "week" : "month"}
+                      type={wallpaperType === "Week" ? "week" : "month"}
+                      frameStyle={style}
                       previewContainer
-                      photoMap={type === "Week" ? weekPhotoMap : monthPhotoMap}
-                      year={type === "Week" ? weekInfo.year : monthInfo.year}
-                      month={type === "Week" ? weekInfo.month : monthInfo.month}
-                      petName={petName}
+                      photoMap={wallpaperType === "Week"
+                        ? (Object.keys(weekPhotoMap).length ? weekPhotoMap : TEST_WEEK)
+                        : (Object.keys(monthPhotoMap).length ? monthPhotoMap : TEST_MONTH)
+                      }
+                      year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                      month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                      week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                      petName={petName || "몽치"}
                       bgColor={activeColorBg}
                     />
                   </div>
@@ -274,7 +290,7 @@ export default function WallpaperScreen() {
         <div style={s.ctaContainer}>
           <button
             style={s.ctaButton}
-            onClick={() => navigate("Downloading", { type: wallpaperType === "Week" ? "week" : "month" })}
+            onClick={() => navigate("Downloading", { type: wallpaperType === "Week" ? "week" : "month", style: selectedStyle })}
           >
             다운받기
           </button>
@@ -309,7 +325,7 @@ export default function WallpaperScreen() {
 
 const s: Record<string, React.CSSProperties> = {
   screen: {
-    width: 375,
+    width: "100%",
     minHeight: "100dvh",
     backgroundColor: "#fff",
     display: "flex",
@@ -384,35 +400,13 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: "row",
     overflowX: "scroll",
     scrollSnapType: "x mandatory" as React.CSSProperties["scrollSnapType"],
-    paddingLeft: CAROUSEL_PAD,   // 90px — 첫 아이템이 정중앙에 위치
-    paddingRight: CAROUSEL_PAD,  // 90px — 마지막 아이템도 정중앙까지 스크롤 가능
-    gap: GAP,
-    height: ACTIVE_H,
     boxSizing: "content-box" as React.CSSProperties["boxSizing"],
     WebkitOverflowScrolling: "touch" as React.CSSProperties["WebkitOverflowScrolling"],
     flexShrink: 0,
   },
   slot: {
     flexShrink: 0,
-    width: ACTIVE_W,
-    height: ACTIVE_H,
     scrollSnapAlign: "center" as React.CSSProperties["scrollSnapAlign"],
-  },
-  wallpaperCard: {
-    width: ACTIVE_W,
-    height: ACTIVE_H,
-    overflow: "hidden",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-    position: "relative",
-  },
-  frameInner: {
-    width: 375,
-    height: 812,
-    transform: `scale(${ACTIVE_SCALE})`,
-    transformOrigin: "top left",
-    position: "absolute",
-    top: 0,
-    left: 0,
   },
   colorRow: {
     display: "flex",
