@@ -32,7 +32,17 @@ export type ScreenParams = {
   PetEdit: undefined;
   HomeMonth: undefined;
   Wallpaper: { initialType?: "Week" | "Month" };
-  Downloading: { type: "week" | "month" };
+  Downloading: {
+    frameStyle: string;
+    bgColor: string;
+    wallpaperType: "week" | "month";
+    year: number;
+    month: number;
+    week?: number;
+    photoMap: Record<string, string>;
+    petName: string;
+    fromAd: boolean;
+  };
 };
 
 interface NavEntry {
@@ -58,7 +68,7 @@ export function NavigationProvider({
   children: React.ReactNode;
 }) {
   const [stack, setStack] = useState<NavEntry[]>([
-    { screen: "Wallpaper", params: undefined }, // TODO: 미리보기용 임시 변경 — 확인 후 "Intro"로 되돌릴 것
+    { screen: "HomeMonth", params: undefined }, // TODO: 미리보기용 임시 변경 — 확인 후 "Intro"로 되돌릴 것
   ]);
 
   const stackRef = useRef(stack);

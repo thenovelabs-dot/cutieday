@@ -203,6 +203,9 @@ export default function HomeMonthScreen() {
             )}
           </div>
 
+          {/* 배너 광고 — TODO: 광고 연결 시 실제 광고 컴포넌트로 교체 */}
+          <div style={s.adBanner} />
+
           {/* 날짜 + 업로드 카드 — 날짜 클릭 or 기본(현재달=오늘/다른달=1일), 미래는 업로드 불가 */}
           <div style={s.uploadSection}>
             <p style={s.dateLabel}>{cardMonth}월{cardDayNum}일</p>
@@ -346,11 +349,11 @@ const s: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
 
-  // node 92:4797 — flex-col, gap 32
+  // node 92:4797 — flex-col, gap 24
   calendarBlock: {
     display: "flex",
     flexDirection: "column",
-    gap: 32,
+    gap: 24,
   },
 
   // node 92:4798 — flex-col, gap 16
@@ -412,6 +415,12 @@ const s: Record<string, React.CSSProperties> = {
   },
 
   // node 92:4869 — flex-col, gap 12
+  adBanner: {
+    height: 69,
+    backgroundColor: "#F2F4F6",
+    borderRadius: 12,
+  },
+
   uploadSection: {
     display: "flex",
     flexDirection: "column",

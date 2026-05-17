@@ -12,15 +12,6 @@ type WallpaperColor = "Blue" | "Black" | "Gray";
 
 const GRADIENT_TOP = "/assets/wallpaper/gradient-top.png";
 
-// ── 테스트용 더미 이미지 (TODO: 배포 전 제거) ──────────────────
-const _COLORS = ["#e63946","#457b9d","#2a9d8f","#e9c46a","#f4a261","#264653","#a8dadc","#6a4c93","#ff6b6b","#4ecdc4"];
-const _mkImg = (c: string) => `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='${encodeURIComponent(c)}'/%3E%3C/svg%3E`;
-const TEST_WEEK: Record<string, string> = Object.fromEntries(
-  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((k, i) => [k, _mkImg(_COLORS[i])])
-);
-const TEST_MONTH: Record<string, string> = Object.fromEntries(
-  Array.from({ length: 31 }, (_, i) => [String(i + 1), _mkImg(_COLORS[i % _COLORS.length])])
-);
 
 const COLOR_OPTIONS: { key: WallpaperColor; color: "Brand" | "Black" | "Gray"; bg: string }[] = [
   { key: "Blue",  color: "Brand", bg: "#508FE1" },
@@ -136,12 +127,12 @@ export default function WallpaperScreen() {
   }, []);
 
   useEffect(() => {
+    const weekStart = getWeekOfMonth(weekInfo.year, weekInfo.month, weekInfo.week);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     (async () => {
-      const weekStart = getWeekOfMonth(weekInfo.year, weekInfo.month, weekInfo.week);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const { data } = await supabase
         .from("daily_photos")
         .select("date, image_url")
@@ -177,6 +168,10 @@ export default function WallpaperScreen() {
   const activeStyleIdx = Math.min(Math.max(Math.round(scrollX / dims.slotPitch), 0), WALLPAPER_STYLES.length - 1);
   const selectedStyle = WALLPAPER_STYLES[activeStyleIdx];
 
+  const isCtaEnabled = wallpaperType === "Week"
+    ? Object.keys(weekPhotoMap).length === 7
+    : Object.keys(monthPhotoMap).length === new Date(monthInfo.year, monthInfo.month, 0).getDate();
+
   return (
     <div ref={screenRef} style={s.screen}>
       <div style={s.body}>
@@ -201,79 +196,72 @@ export default function WallpaperScreen() {
           </div>
         </div>
 
-        {/*
-          캐러셀:
-          - paddingLeft/Right = 90px → 아이템이 중앙 정렬로 snap
-          - 스크롤 1칸 = 207px (SLOT_PITCH)
-          - 중앙에 오는 아이템 = selected (ACTIVE_W, opacity 1)
-          - 측면 아이템 = inactive (scale down to INACTIVE_W, opacity 0.6)
-        */}
-        <div
-          ref={carouselRef}
-          onScroll={handleScroll}
-          className="hide-scrollbar"
-          style={{
-            ...s.carousel,
-            paddingLeft: dims.carouselPad,
-            paddingRight: dims.carouselPad,
-            gap: dims.gap,
-            height: dims.activeH,
-          }}
-        >
-          {WALLPAPER_STYLES.map((style, idx) => {
-            const distance = Math.abs(idx - scrollX / dims.slotPitch);
-            const t = Math.min(distance, 1);
+        {/* 캐러셀 + 색상 선택: headerRow와 bottomCta 사이 수직 중앙 */}
+        <div style={s.centerContent}>
+          <div
+            ref={carouselRef}
+            onScroll={handleScroll}
+            className="hide-scrollbar"
+            style={{
+              ...s.carousel,
+              paddingLeft: dims.carouselPad,
+              paddingRight: dims.carouselPad,
+              gap: dims.gap,
+              height: dims.activeH,
+            }}
+          >
+            {WALLPAPER_STYLES.map((style, idx) => {
+              const distance = Math.abs(idx - scrollX / dims.slotPitch);
+              const t = Math.min(distance, 1);
 
-            const visualScale = 1 - (1 - dims.inactiveVisualScale) * t;
-            const opacity = 1 - 0.4 * t;
-            const marginTop = dims.inactiveTop * t;
-            const borderRadius = 24 - 2 * t;
-            const transformOrigin = idx >= scrollX / dims.slotPitch ? "top left" : "top right";
+              const visualScale = 1 - (1 - dims.inactiveVisualScale) * t;
+              const opacity = 1 - 0.4 * t;
+              const marginTop = dims.inactiveTop * t;
+              const borderRadius = 24 - 2 * t;
+              const transformOrigin = idx >= scrollX / dims.slotPitch ? "top left" : "top right";
 
-            return (
-              <div key={style} style={{ ...s.slot, width: dims.activeW, height: dims.activeH }}>
-                <div
-                  style={{
-                    width: dims.activeW,
-                    height: dims.activeH,
-                    overflow: "hidden",
-                    position: "relative",
-                    opacity,
-                    transform: `scale(${visualScale})`,
-                    transformOrigin,
-                    marginTop,
-                    borderRadius,
-                  }}
-                >
-                  <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                    <WallpaperFrame
-                      type={wallpaperType === "Week" ? "week" : "month"}
-                      frameStyle={style}
-                      previewContainer
-                      photoMap={wallpaperType === "Week"
-                        ? (Object.keys(weekPhotoMap).length ? weekPhotoMap : TEST_WEEK)
-                        : (Object.keys(monthPhotoMap).length ? monthPhotoMap : TEST_MONTH)
-                      }
-                      year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                      month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
-                      week={wallpaperType === "Week" ? weekInfo.week : undefined}
-                      petName={petName || "몽치"}
-                      bgColor={activeColorBg}
-                    />
+              return (
+                <div key={style} style={{ ...s.slot, width: dims.activeW, height: dims.activeH }}>
+                  <div
+                    style={{
+                      width: dims.activeW,
+                      height: dims.activeH,
+                      overflow: "hidden",
+                      position: "relative",
+                      opacity,
+                      transform: `scale(${visualScale})`,
+                      transformOrigin,
+                      marginTop,
+                      borderRadius,
+                    }}
+                  >
+                    <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
+                      <WallpaperFrame
+                        type={wallpaperType === "Week" ? "week" : "month"}
+                        frameStyle={style}
+                        previewContainer
+                        photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
+                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                        week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                        petName={petName || "몽치"}
+                        bgColor={activeColorBg}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {/* 색상 선택 */}
-        <div style={s.colorRow}>
-          {COLOR_OPTIONS.map(({ key, color }) => (
-            <button key={key} style={s.colorDotBtn} onClick={() => setSelectedColor(key)}>
-              <ColorSelectUnit color={color} selected={selectedColor === key} />
-            </button>
-          ))}
+          {/* 색상 선택 */}
+          <div style={s.colorRow}>
+            {COLOR_OPTIONS.map(({ key, color }) => (
+              <button key={key} style={s.colorDotBtn} onClick={() => setSelectedColor(key)}>
+                <ColorSelectUnit color={color} selected={selectedColor === key} />
+              </button>
+            ))}
+          </div>
         </div>
 
       </div>
@@ -289,10 +277,21 @@ export default function WallpaperScreen() {
         </div>
         <div style={s.ctaContainer}>
           <button
-            style={s.ctaButton}
-            onClick={() => navigate("Downloading", { type: wallpaperType === "Week" ? "week" : "month", style: selectedStyle })}
+            disabled={!isCtaEnabled}
+            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled ? "pointer" : "default" }}
+            onClick={() => isCtaEnabled && navigate("Downloading", {
+              frameStyle: selectedStyle,
+              bgColor: activeColorBg,
+              wallpaperType: wallpaperType === "Week" ? "week" : "month",
+              year: wallpaperType === "Week" ? weekInfo.year : monthInfo.year,
+              month: wallpaperType === "Week" ? weekInfo.month : monthInfo.month,
+              week: wallpaperType === "Week" ? weekInfo.week : undefined,
+              photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
+              petName,
+              fromAd: selectedStyle !== "Default",
+            })}
           >
-            다운받기
+            {selectedStyle === "Default" ? "다운받기" : "광고보고 다운받기"}
           </button>
         </div>
       </div>
@@ -347,7 +346,6 @@ const s: Record<string, React.CSSProperties> = {
     paddingLeft: 20,
     paddingRight: 20,
     flexShrink: 0,
-    marginTop: 31,
     marginBottom: 31,
   },
   headerInner: {
@@ -394,6 +392,13 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
+  },
+  centerContent: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    minHeight: 0,
   },
   carousel: {
     display: "flex",

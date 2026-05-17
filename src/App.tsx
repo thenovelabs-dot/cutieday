@@ -3,6 +3,7 @@ import { loginWithToss } from "./lib/tossLogin";
 import IntroScreen from "./screens/IntroScreen";
 import HomeMonthScreen from "./screens/HomeMonthScreen";
 import WallpaperScreen from "./screens/WallpaperScreen";
+import DownloadingScreen from "./screens/DownloadingScreen";
 
 function Router() {
   const { current, navigate } = useNavigation();
@@ -25,6 +26,9 @@ function Router() {
     case "Wallpaper":
       return <WallpaperScreen />;
 
+    case "Downloading":
+      return <DownloadingScreen />;
+
     // TODO: 아래 화면들은 구현 후 추가
     case "OnboardingSpecies":
     case "OnboardingName":
@@ -33,7 +37,6 @@ function Router() {
     case "HomeAlbum":
     case "ImageAdjust":
     case "PetEdit":
-    case "Downloading":
       return <div style={{ padding: 24 }}>🚧 {current.screen} 구현 예정</div>;
   }
 }

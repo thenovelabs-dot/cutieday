@@ -104,7 +104,8 @@ navigate("Wallpaper");
 | 파일 | 설명 |
 |------|------|
 | `src/screens/HomeMonthScreen.tsx` | HomeScreen (월별/주별 통합, 내부 상태로 전환) |
-| `src/screens/WallpaperScreen.tsx` | WallpaperScreen (주별/월별 통합, 내부 상태로 전환) — 작업 예정 |
+| `src/screens/WallpaperScreen.tsx` | WallpaperScreen (주별/월별 통합, 내부 상태로 전환) |
+| `src/screens/DownloadingScreen.tsx` | DownloadingScreen (생성중/완료/실패 3가지 상태) |
 | `src/components/Calendar.tsx` | 월별/주별 캘린더 |
 | `src/components/CalendarDateM.tsx` | 월별 날짜 셀 (selected 상태 포함) |
 | `src/components/CalendarDateL.tsx` | 주별 날짜 셀 (selected 상태 포함) |
@@ -127,9 +128,132 @@ navigate("Wallpaper");
 
 ---
 
-## 7. 업데이트 이력
+---
+
+## 7. DownloadingScreen 연동 (A담당 필수)
+
+### 화면 구조
+`DownloadingScreen.tsx`는 3가지 상태를 관리합니다.
+
+| 상태 | 설명 | 버튼 |
+|------|------|------|
+| `generating` | 생성 중 (스피너) | 저장하기 비활성(회색) |
+| `complete` | 생성 완료 (초록 체크) | 저장하기 활성(파란색) |
+| `failed` | 생성 실패 (빨간 X) | 다시 만들기 → 재시도 |
+
+현재 코드에서 `setTimeout(() => setStatus("complete"), 2000)`은 **임시 코드**입니다.
+배포 전 반드시 아래 실제 로직으로 교체해야 합니다.
+
+### A담당이 해야 할 일 — react-native-view-shot 연동
+
+`DownloadingScreen.tsx`의 `useEffect` 내부와 `handleBtn` 두 곳을 수정해야 합니다.
+
+```typescript
+// 1. useEffect — 화면 진입 시 자동으로 캡처 시도
+useEffect(() => {
+  setStatus("generating");
+  (async () => {
+    try {
+      // WallpaperFrame ref를 캡처
+      const uri = await captureRef(wallpaperRef, { format: "png", quality: 1 });
+      setCapturedUri(uri);
+      setStatus("complete");
+    } catch {
+      setStatus("failed");
+    }
+  })();
+}, [attempt]);
+
+// 2. handleBtn — 저장하기 클릭 시
+const handleBtn = () => {
+  if (status === "complete" && capturedUri) {
+    // CameraRoll / MediaLibrary 권한 요청 후 저장
+    await MediaLibrary.saveToLibraryAsync(capturedUri);
+  } else if (status === "failed") {
+    setAttempt((n) => n + 1); // 재시도 (이미 구현됨)
+  }
+};
+```
+
+### WallpaperFrame ref 전달 방법
+DownloadingScreen에서 WallpaperFrame에 `ref`를 붙여야 캡처가 가능합니다.
+WallpaperFrame 컴포넌트에 `forwardRef`를 추가하거나,
+wrapper div에 ref를 달아서 사용하세요.
+
+### navigate 호출 방법 (WallpaperScreen → DownloadingScreen)
+WallpaperScreen에서 이미 아래 파라미터를 전달하고 있습니다.
+
+```typescript
+navigate("Downloading", {
+  frameStyle,   // WallpaperFrameStyle
+  bgColor,      // string (hex)
+  wallpaperType, // "week" | "month"
+  year, month, week,
+  photoMap,     // Record<string, string> — 해당 기간 사진 URL 맵
+  petName,
+  fromAd,       // boolean — Default 스타일이면 false, 나머지는 true
+})
+```
+
+DownloadingScreen은 이 파라미터로 WallpaperFrame을 미리보기로 렌더링하고 있습니다.
+캡처 시 동일한 WallpaperFrame을 사용하면 됩니다.
+
+---
+
+## 8. 광고 SDK 연동 (A담당 필수)
+
+### 리워드 광고 (WallpaperScreen)
+`WallpaperScreen.tsx`의 CTA 버튼 onClick에 광고 분기가 **아직 없습니다.**
+현재는 style=Default 포함 모든 스타일에서 바로 DownloadingScreen으로 이동합니다.
+
+배포 전 아래처럼 분기를 추가해주세요.
+
+```typescript
+// WallpaperScreen.tsx — CTA 버튼 onClick
+onClick={() => {
+  if (!isCtaEnabled) return;
+  if (selectedStyle !== "Default") {
+    // TODO: 앱인토스 리워드 광고 SDK 호출
+    showRewardAd({
+      onComplete: () => navigate("Downloading", { ...params }),
+      onFail: () => { /* 버튼 유지, 아무것도 안 함 */ },
+    });
+  } else {
+    navigate("Downloading", { ...params });
+  }
+}}
+```
+
+### 배너 광고 (HomeMonthScreen, DownloadingScreen)
+두 화면에 회색 placeholder div가 있습니다. 광고 SDK 연동 시 교체하세요.
+
+```typescript
+// HomeMonthScreen.tsx — s.adBanner 스타일 div
+// DownloadingScreen.tsx — AdBanner 컴포넌트 내부
+
+// 두 곳 모두 동일하게 교체:
+<AdBannerSDKComponent /> // 앱인토스 배너 광고 컴포넌트
+```
+
+크기: **width 100% (양쪽 20px padding), height 69px**
+
+---
+
+## 9. 배포 전 반드시 되돌려야 할 임시 설정
+
+| 파일 | 현재 (임시) | 배포 시 변경값 |
+|------|------------|--------------|
+| `src/lib/navigation.tsx` line 71 | `screen: "HomeMonth"` | `screen: "Intro"` |
+| `src/screens/DownloadingScreen.tsx` useEffect | `setTimeout → setStatus("complete")` | react-native-view-shot 실제 로직으로 교체 |
+
+---
+
+## 10. 업데이트 이력
 
 | 날짜 | 내용 |
 |------|------|
 | 2026-05-16 | 최초 작성 — 팝업 연동 방식(sessionStorage) 정의 |
 | 2026-05-16 | WallpaperScreen 단일 화면 구조 안내 추가 |
+| 2026-05-18 | DownloadingScreen 구현 완료 — react-native-view-shot 연동 방법 추가 |
+| 2026-05-18 | 광고 SDK 연동 항목 추가 (리워드 광고 분기, 배너 광고 placeholder 위치) |
+| 2026-05-18 | 배포 전 임시 설정 되돌리기 항목 추가 |

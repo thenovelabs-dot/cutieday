@@ -84,20 +84,22 @@ const POLAROID_MONTH_Y = [356,417,478,539,600];
 const POSTCARD_MON_ROT = -16.623;
 
 // ── 배경 레이어 (포토 셀 뒤쪽) ────────────────────────────────
-function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string): SvgLayer[] {
+function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, daysInMonth = 31): SvgLayer[] {
   const dark = bgColor === "#000000" || bgColor === "#232323";
   if (style === "Postcard")
-    return [{ src: BASE+(isWeek ? "postcardWeek.svg" : "postcardMonth.svg"), x: isWeek?108:40, y: isWeek?308:332, w: isWeek?159:296, h: isWeek?366:302 }];
+    return [{ src: BASE+(isWeek ? "postcardWeek.svg" : `postcardMonth${daysInMonth}.svg`), x: isWeek?108:40, y: isWeek?308:332, w: isWeek?159:296, h: isWeek?366:302 }];
   if (style === "Polaroid")
-    return [{ src: BASE+(isWeek ? "polaroidweek.svg" : "polaroidMonth.svg"), x: isWeek?66:40, y: isWeek?323:353, w: isWeek?244:295, h: isWeek?336:301 }];
+    return [{ src: BASE+(isWeek ? "polaroidweek.svg" : `polaroidMonth${daysInMonth}.svg`), x: isWeek?66:40, y: isWeek?323:353, w: isWeek?244:295, h: isWeek?336:301 }];
   if (isWeek) {
     if (style === "Spark")  return [{ src: BASE+"sparkWeek.svg",                                          x:-119, y:-79,  w:613,  h:970  }];
     if (style === "Apple")  return [{ src: BASE+(dark ? "appleWeek-black-gray.svg" : "appleWeek-blue.svg"), x:-345, y:-54,  w:1065, h:921  }];
     if (style === "Note")   return [{ src: BASE+(dark ? "noteWeek-black-gray.svg"  : "noteWeek-blue.svg"),  x:-216, y:-289, w:848,  h:1391 }];
+    if (style === "Star")   return [{ src: BASE+"starWeek.svg",  x:0, y:0, w:375, h:812 }];
   } else {
     if (style === "Spark")  return [{ src: BASE+"sparkMonth.svg",                                           x:0,    y:0,    w:375,  h:812  }];
     if (style === "Apple")  return [{ src: BASE+(dark ? "appleMonth-black-gray.svg": "appleMonth-blue.svg"), x:-332, y:-54,  w:1039, h:921  }];
     if (style === "Note")   return [{ src: BASE+(dark ? "noteMonth-black-gray.svg" : "noteMonth-blue.svg"),  x:-156, y:-212, w:724,  h:1236 }];
+    if (style === "Star")   return [{ src: BASE+"starMonth.svg", x:0, y:0, w:375, h:812 }];
   }
   return [];
 }
@@ -106,8 +108,6 @@ function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string):
 function overlayLayers(style: WallpaperFrameStyle, isWeek: boolean): SvgLayer[] {
   if (style === "Default" && isWeek)
     return [{ src: BASE+"defaultWeekText.svg", x:113, y:427, w:218, h:232 }];
-  if (style === "Star")
-    return [{ src: BASE+(isWeek ? "starWeek.svg" : "starMonth.svg"), x:0, y:0, w:375, h:812 }];
   return [];
 }
 
@@ -163,7 +163,7 @@ function renderSubtitle(
       );
     }
     return (
-      <div style={{ position: "absolute", left: 74, top: 324, display: "flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: 40, top: 324, display: "flex", alignItems: "center", gap: 5, pointerEvents: "none" }}>
         <span style={{ ...TEXT_BASE, fontSize: 17 }}>{`${year}년 ${month}월 ${petName}. 오늘도 귀여웠어`}</span>
         <img src={ANIMAL_ICON} alt="" style={{ width: 15, height: 15, flexShrink: 0 }} />
       </div>
@@ -176,9 +176,9 @@ function renderSubtitle(
         <>
           <img src={ANIMAL_ICON} alt="" style={{ position: "absolute", left: 204, top: 599, width: 18, height: 18, pointerEvents: "none" }} />
           <div style={{ position: "absolute", left: 204, top: 622, width: 57, pointerEvents: "none" }}>
-            <div style={{ ...TEXT_BASE, fontSize: 11 }}>{year}년 {month}월</div>
-            <div style={{ ...TEXT_BASE, fontSize: 11 }}>{week}주차</div>
-            <div style={{ ...TEXT_BASE, fontSize: 11 }}>{petName} 오늘도 귀여웠어</div>
+            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{year}년 {month}월</div>
+            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{week}주차</div>
+            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{petName} 오늘도 귀여웠어</div>
           </div>
         </>
       );
@@ -221,17 +221,18 @@ export default function WallpaperFrame({
 }: WallpaperFrameProps) {
   const isWeek = type === "week";
   const showBadge = false;
-  const previewSrc = frameStyle === "Note" ? BASE+"PreviewContainer-black.svg" : BASE+"PreviewContainer.svg";
+  const effectiveBg = (frameStyle === "Note" && bgColor === "#508FE1") ? "#ffffff" : bgColor;
+  const previewSrc = (frameStyle === "Note" && bgColor === "#508FE1") ? BASE+"PreviewContainer-black.svg" : BASE+"PreviewContainer.svg";
 
   const frame = (
     <div style={{
-      width: 375, height: 812, backgroundColor: bgColor,
+      width: 375, height: 812, backgroundColor: effectiveBg,
       position: "relative", overflow: "hidden",
       flexShrink: 0, boxSizing: "border-box",
     }}>
 
       {/* 1. 배경 SVG (포토 셀 뒤) */}
-      {bgLayers(frameStyle, isWeek, bgColor).map((l, i) => (
+      {bgLayers(frameStyle, isWeek, effectiveBg, new Date(year, month, 0).getDate()).map((l, i) => (
         <img key={i} src={l.src} alt="" style={{ position:"absolute", left:l.x, top:l.y, width:l.w, height:l.h, display:"block", pointerEvents:"none" }} />
       ))}
 
@@ -245,7 +246,7 @@ export default function WallpaperFrame({
               <div key={key} style={{
                 position:"absolute", left:c.x, top:c.y, width:c.w, height:c.h,
                 borderRadius: frameStyle === "Apple" ? 13 : (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8,
-                backgroundColor: (frameStyle === "Postcard" || frameStyle === "Polaroid") ? "transparent" : bgColor,
+                backgroundColor: (frameStyle === "Postcard" || frameStyle === "Polaroid") ? "transparent" : (src ? effectiveBg : "#ffffff"),
                 overflow:"hidden",
                 transform: cellRot ? `rotate(${cellRot}deg)` : undefined,
                 transformOrigin: "center",
@@ -257,45 +258,54 @@ export default function WallpaperFrame({
           })
         : (() => {
             const imgStyle: React.CSSProperties = { position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" };
+            const daysInMonth = new Date(year, month, 0).getDate();
 
             // Postcard Month: 피그마 정확 좌표 사용 (대각선 배치 + per-cell 회전)
             if (frameStyle === "Postcard") {
-              return POSTCARD_MONTH_CELLS.map(([x,y,w,h,rot], i) => {
-                const day = i + 1;
-                const src = photoMap?.[String(day)];
-                return (
-                  <div key={day} style={{
-                    position:"absolute", left:x, top:y, width:w, height:h, overflow:"hidden",
-                    transform: rot ? `rotate(${rot}deg)` : undefined,
-                    transformOrigin: "center",
-                  }}>
-                    {src && <img src={src} alt="" style={imgStyle} />}
-                  </div>
-                );
-              });
+              return (
+                <>
+                  {POSTCARD_MONTH_CELLS.slice(0, daysInMonth).map(([x,y,w,h,rot], i) => {
+                    const day = i + 1;
+                    const src = photoMap?.[String(day)];
+                    return (
+                      <div key={day} style={{
+                        position:"absolute", left:x, top:y, width:w, height:h, overflow:"hidden",
+                        backgroundColor: src ? "transparent" : "#ffffff",
+                        transform: rot ? `rotate(${rot}deg)` : undefined,
+                        transformOrigin: "center",
+                      }}>
+                        {src && <img src={src} alt="" style={imgStyle} />}
+                      </div>
+                    );
+                  })}
+                </>
+              );
             }
 
             // Polaroid Month: 피그마 정확 좌표 사용
             if (frameStyle === "Polaroid") {
-              return Array.from({ length: 31 }, (_, i) => {
-                const day = i + 1;
-                const col = i % 7;
-                const row = Math.floor(i / 7);
-                if (row >= POLAROID_MONTH_Y.length) return null;
-                const src = photoMap?.[String(day)];
-                return (
-                  <div key={day} style={{ position:"absolute", left:POLAROID_MONTH_X[col], top:POLAROID_MONTH_Y[row], width:37, height:43, overflow:"hidden" }}>
-                    {src && <img src={src} alt="" style={imgStyle} />}
-                  </div>
-                );
-              });
+              return (
+                <>
+                  {Array.from({ length: daysInMonth }, (_, i) => {
+                    const col = i % 7;
+                    const row = Math.floor(i / 7);
+                    const day = i + 1;
+                    const src = photoMap?.[String(day)];
+                    return (
+                      <div key={day} style={{ position:"absolute", left:POLAROID_MONTH_X[col], top:POLAROID_MONTH_Y[row], width:37, height:43, overflow:"hidden", backgroundColor: src ? "transparent" : "#ffffff" }}>
+                        {src && <img src={src} alt="" style={imgStyle} />}
+                      </div>
+                    );
+                  })}
+                </>
+              );
             }
 
             // 기본 그리드 방식
             const g = MONTH_GRID[frameStyle];
             const cw = g.w / 7;
             const ch = g.h / 5;
-            return Array.from({ length: 31 }, (_, i) => {
+            return Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const src = photoMap?.[String(day)];
               return (
@@ -305,7 +315,7 @@ export default function WallpaperFrame({
                   top:  g.y + Math.floor(i / 7) * ch,
                   width: cw, height: ch,
                   borderRadius: frameStyle === "Apple" ? 13 : 0,
-                  backgroundColor: bgColor, overflow:"hidden",
+                  backgroundColor: src ? effectiveBg : "#ffffff", overflow:"hidden",
                 }}>
                   {src && <img src={src} alt="" style={imgStyle} />}
                 </div>
@@ -331,7 +341,7 @@ export default function WallpaperFrame({
 
   if (!previewContainer) {
     return (
-      <div style={{ padding:50, boxSizing:"border-box", backgroundColor: bgColor }}>
+      <div style={{ padding:50, boxSizing:"border-box", backgroundColor: effectiveBg }}>
         {frame}
       </div>
     );
