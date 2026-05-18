@@ -49,12 +49,17 @@ function dateLabelParts(
 function toThumbUrl(url: string): string {
   try {
     const u = new URL(url);
+    u.pathname = u.pathname.replace("/object/public/", "/render/image/public/");
     u.searchParams.set("width", "200");
     u.searchParams.set("quality", "60");
     return u.toString();
   } catch {
     return url;
   }
+}
+
+function preloadImages(urls: string[]) {
+  urls.forEach((src) => { const img = new Image(); img.src = src; });
 }
 
 function buildWeekPhotoMap(
@@ -175,7 +180,9 @@ export default function WallpaperScreen() {
         .gte("date", fmt(weekStart))
         .lte("date", fmt(weekEnd));
       setWeekPhotoMap(buildWeekPhotoMap(data ?? [], weekStart));
-      setWeekThumbMap(buildWeekPhotoMap(data ?? [], weekStart, true));
+      const thumbMap = buildWeekPhotoMap(data ?? [], weekStart, true);
+      setWeekThumbMap(thumbMap);
+      preloadImages(Object.values(thumbMap));
     })();
   }, [weekInfo, petId]);
 
@@ -189,7 +196,9 @@ export default function WallpaperScreen() {
         .gte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-01`)
         .lte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-31`);
       setMonthPhotoMap(buildMonthPhotoMap(data ?? []));
-      setMonthThumbMap(buildMonthPhotoMap(data ?? [], true));
+      const thumbMap = buildMonthPhotoMap(data ?? [], true);
+      setMonthThumbMap(thumbMap);
+      preloadImages(Object.values(thumbMap));
     })();
   }, [monthInfo, petId]);
 
