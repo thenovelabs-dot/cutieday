@@ -279,17 +279,6 @@ function XIcon() {
   );
 }
 
-function AdBanner() {
-  // TODO: 광고 SDK 연동 시 TossAds.attachBanner("실제adGroupId", containerRef.current, { theme: "light" })로 교체
-  return (
-    <div style={{
-      marginLeft: 20, marginRight: 20,
-      height: 69,
-      backgroundColor: "#F2F4F6",
-      borderRadius: 12,
-    }} />
-  );
-}
 
 export default function DownloadingScreen() {
   const { current, navigate } = useNavigation();
@@ -302,7 +291,6 @@ export default function DownloadingScreen() {
     week?: number;
     photoMap?: Record<string, string>;
     petName?: string;
-    fromAd?: boolean;
   };
 
   const {
@@ -403,10 +391,6 @@ export default function DownloadingScreen() {
             </div>
           </div>
 
-          {/* 광고 배너 */}
-          <div style={{ width: "100%", flexShrink: 0 }}>
-            <AdBanner />
-          </div>
         </div>
 
         {/* 하단 CTA — 항상 하단 고정 */}

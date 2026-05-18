@@ -178,6 +178,8 @@ export default function WallpaperScreen() {
   const activeStyleIdx = Math.min(Math.max(Math.round(scrollX / dims.slotPitch), 0), WALLPAPER_STYLES.length - 1);
   const selectedStyle = WALLPAPER_STYLES[activeStyleIdx];
 
+  // 주별: 7장 모두 있어야 활성화
+  // 월별: 해당 월 전체 날짜 수만큼 사진 있어야 활성화
   const isCtaEnabled = wallpaperType === "Week"
     ? Object.keys(weekPhotoMap).length === 7
     : Object.keys(monthPhotoMap).length === new Date(monthInfo.year, monthInfo.month, 0).getDate();
@@ -191,10 +193,8 @@ export default function WallpaperScreen() {
     week: wallpaperType === "Week" ? weekInfo.week : undefined,
     photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
     petName,
-    fromAd: selectedStyle !== "Default",
   }), [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, weekPhotoMap, monthPhotoMap, petName]);
 
-  // TODO: 리워드 광고 연동 후 광고 시청 완료 시에만 navigate 허용
   const handleCtaClick = useCallback(() => {
     if (!isCtaEnabled) return;
     navigate("Downloading", getDownloadParams());
