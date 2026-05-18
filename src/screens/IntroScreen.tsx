@@ -75,7 +75,7 @@ export default function IntroScreen({ onLogin }: Props) {
         <div style={s.gradient} />
         <div style={s.buttonWrapper}>
           <button style={s.ctaButton} onClick={onLogin}>
-            자세히보기
+            시작하기
           </button>
         </div>
       </div>

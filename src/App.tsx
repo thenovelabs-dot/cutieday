@@ -54,11 +54,16 @@ function Router() {
 
     case "PhotoUpload":
       return (
-        <PhotoUploadScreen
-          onCamera={() => navigate("HomeCamera")}
-          onAlbum={() => navigate("HomeAlbum")}
-          onClose={() => goBack()}
-        />
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+          <HomeMonthScreen />
+          <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
+            <PhotoUploadScreen
+              onCamera={() => navigate("HomeCamera")}
+              onAlbum={() => navigate("HomeAlbum")}
+              onClose={() => goBack()}
+            />
+          </div>
+        </div>
       );
 
     case "HomeCamera":

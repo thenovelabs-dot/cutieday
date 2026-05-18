@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { BottomSheet } from "@toss/tds-mobile";
 import { useNavigation } from "../lib/navigation";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
@@ -54,7 +53,6 @@ export default function HomeMonthScreen() {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [weekInfo, setWeekInfo] = useState<{ year: number; month: number; week: number } | null>(null);
   const [successDay, setSuccessDay] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | null>(null);
-  const [showUploadSheet, setShowUploadSheet] = useState(false);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth() + 1;
@@ -218,8 +216,8 @@ export default function HomeMonthScreen() {
               type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
               petName={pet?.name ?? "반려동물"}
               imageUrl={photoMap.get(activeDateStr)}
-              onUpload={() => setShowUploadSheet(true)}
-              onChangePhoto={() => setShowUploadSheet(true)}
+              onUpload={() => navigate("PhotoUpload")}
+              onChangePhoto={() => navigate("PhotoUpload")}
             />
           </div>
         </div>
@@ -272,23 +270,6 @@ export default function HomeMonthScreen() {
         onMakeWallpaper={() => { setSuccessDay(null); navigate("Wallpaper", { initialType: "Week" }); }}
       />
     )}
-    <BottomSheet
-      open={showUploadSheet}
-      onClose={() => setShowUploadSheet(false)}
-      header={<BottomSheet.Header>사진 업로드</BottomSheet.Header>}
-    >
-      <div style={{ padding: "0 20px 20px" }}>
-        <button style={uploadItemStyle} onClick={() => { setShowUploadSheet(false); navigate("HomeCamera"); }}>
-          <span style={{ fontSize: 22, width: 32, textAlign: "center", flexShrink: 0 }}>📷</span>
-          <span style={{ fontSize: 16, fontWeight: 500, color: "#191F28" }}>사진 촬영하기</span>
-        </button>
-        <div style={{ height: 1, backgroundColor: "#F2F4F6" }} />
-        <button style={uploadItemStyle} onClick={() => { setShowUploadSheet(false); navigate("HomeAlbum"); }}>
-          <span style={{ fontSize: 22, width: 32, textAlign: "center", flexShrink: 0 }}>🖼️</span>
-          <span style={{ fontSize: 16, fontWeight: 500, color: "#191F28" }}>앨범에서 선택하기</span>
-        </button>
-      </div>
-    </BottomSheet>
     </>
   );
 }
@@ -506,14 +487,3 @@ const s: Record<string, React.CSSProperties> = {
   },
 };
 
-const uploadItemStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 14,
-  width: "100%",
-  padding: "16px 4px",
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  textAlign: "left",
-};

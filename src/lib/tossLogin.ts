@@ -16,7 +16,15 @@ export async function loginWithToss(): Promise<TossLoginResult> {
   }
 
   // 1. 토스 로그인 → 인가 코드 받기
-  const { authorizationCode, referrer } = await appLogin();
+  let authorizationCode: string;
+  let referrer: string;
+  try {
+    const result = await appLogin();
+    authorizationCode = result.authorizationCode;
+    referrer = result.referrer;
+  } catch (e) {
+    throw new Error(`[appLogin] ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   // 2. Edge Function에서 토큰 교환 + userKey + Supabase JWT 발급
   const res = await fetch(
