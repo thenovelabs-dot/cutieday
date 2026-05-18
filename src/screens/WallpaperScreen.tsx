@@ -328,24 +328,21 @@ export default function WallpaperScreen() {
                       transformOrigin: "top left",
                       marginTop: dims.inactiveTop * initT,
                       borderRadius: 24 - 2 * initT,
+                      willChange: "transform, opacity",
                     }}
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                      {Math.abs(idx - activeStyleIdx) <= 1 ? (
-                        <WallpaperFrame
-                          type={wallpaperType === "Week" ? "week" : "month"}
-                          frameStyle={style}
-                          previewContainer={false}
-                          photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
-                          year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                          month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
-                          week={wallpaperType === "Week" ? weekInfo.week : undefined}
-                          petName={petName || "몽치"}
-                          bgColor={activeColorBg}
-                        />
-                      ) : (
-                        <div style={{ width: 375, height: 812, backgroundColor: activeColorBg }} />
-                      )}
+                      <WallpaperFrame
+                        type={wallpaperType === "Week" ? "week" : "month"}
+                        frameStyle={style}
+                        previewContainer={false}
+                        photoMap={wallpaperType === "Week" ? weekThumbMap : monthThumbMap}
+                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                        week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                        petName={petName || "몽치"}
+                        bgColor={activeColorBg}
+                      />
                     </div>
                   </div>
                 </div>

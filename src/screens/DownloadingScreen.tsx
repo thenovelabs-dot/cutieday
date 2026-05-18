@@ -306,7 +306,15 @@ export default function DownloadingScreen() {
 
   const [status, setStatus] = useState<DownloadStatus>("generating");
   const [attempt, setAttempt] = useState(0);
+  const [showToast, setShowToast] = useState(false);
   const blobRef = useRef<Blob | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSaveToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setShowToast(true);
+    toastTimerRef.current = setTimeout(() => setShowToast(false), 2000);
+  };
 
   useEffect(() => {
     setStatus("generating");
@@ -334,6 +342,7 @@ export default function DownloadingScreen() {
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file] });
+          triggerSaveToast();
           return;
         } catch (e) {
           if ((e as Error).name === "AbortError") return;
@@ -349,6 +358,7 @@ export default function DownloadingScreen() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 100);
+      triggerSaveToast();
     } else if (status === "failed") {
       setAttempt(n => n + 1);
     }
@@ -364,8 +374,8 @@ export default function DownloadingScreen() {
 
   return (
     <>
-      <div style={{ width: 375, height: 812, backgroundColor: "#fff", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none" }}>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: 375, height: 812, backgroundColor: "#fff", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none", position: "relative" }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
         <AppNav showTitle onBack={() => navigate("Wallpaper")} />
 
         {/* 컨텐츠 — 네비와 CTA 사이 수직 중앙 */}
@@ -427,6 +437,26 @@ export default function DownloadingScreen() {
             </button>
           </div>
         </div>
+
+        {showToast && (
+          <div style={{
+            position: "absolute",
+            bottom: 104,
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "rgba(25, 31, 40, 0.88)",
+            color: "#fff",
+            padding: "12px 20px",
+            borderRadius: 100,
+            fontSize: 14,
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            zIndex: 100,
+            animation: "toastIn 0.2s ease-out",
+          }}>
+            갤러리에 저장되었어요
+          </div>
+        )}
       </div>
     </>
   );
