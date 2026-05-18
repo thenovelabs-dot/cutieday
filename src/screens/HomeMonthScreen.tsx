@@ -213,8 +213,8 @@ export default function HomeMonthScreen() {
               type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
               petName={pet?.name ?? "반려동물"}
               imageUrl={photoMap.get(activeDateStr)}
-              onUpload={() => navigate("PhotoUpload")}
-              onChangePhoto={() => navigate("PhotoUpload")}
+              onUpload={() => navigate("PhotoUpload", { date: activeDateStr })}
+              onChangePhoto={() => navigate("PhotoUpload", { date: activeDateStr })}
             />
           </div>
         </div>
