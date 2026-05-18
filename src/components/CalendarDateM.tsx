@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function CalendarDateM({ state = "Default", day = 1, imageUrl, onClick, selected = false }: Props) {
-  const borderColor = state === "Today" ? "#508FE1" : "#4E5968";
+  const borderColor = state === "Today" ? "#99BAE6" : "#4E5968";
 
   const bgColor =
     state === "Today"  ? "#E8F3FF"
@@ -91,7 +91,7 @@ export default function CalendarDateM({ state = "Default", day = 1, imageUrl, on
             position: "absolute",
             inset: 0,
             borderRadius: 12,
-            border: `4px solid ${borderColor}`,
+            border: `2px solid ${borderColor}`,
             boxSizing: "border-box",
             pointerEvents: "none",
             filter: "url(#wavy-cal-sel)",

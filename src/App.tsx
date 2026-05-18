@@ -1,6 +1,7 @@
 import { NavigationProvider, useNavigation } from "./lib/navigation";
 import { loginWithToss } from "./lib/tossLogin";
 import { setUserKey } from "./lib/auth";
+import { supabase } from "./lib/supabase";
 import IntroScreen from "./screens/IntroScreen";
 import OnboardingSpeciesScreen from "./screens/OnboardingSpeciesScreen";
 import OnboardingNameScreen from "./screens/OnboardingNameScreen";
@@ -23,13 +24,9 @@ function Router() {
           onLogin={async () => {
             try {
               const { userKey, isNewUser } = await loginWithToss();
-              setUserKey(userKey);
               navigate(isNewUser ? "OnboardingSpecies" : "HomeMonth");
-            } catch {
-              if (import.meta.env.DEV) {
-                setUserKey("dev-user");
-                navigate("OnboardingSpecies");
-              }
+            } catch (e) {
+              window.alert("로그인 오류: " + (e instanceof Error ? e.message : String(e)));
             }
           }}
         />

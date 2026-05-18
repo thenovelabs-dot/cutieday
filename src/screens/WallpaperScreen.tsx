@@ -3,7 +3,6 @@ import { useNavigation } from "../lib/navigation";
 import AppNav from "../components/AppNav";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
-import { GoogleAdMob } from "@apps-in-toss/web-framework";
 import SegmentText from "../components/SegmentText";
 import WallpaperFrame, { WALLPAPER_STYLES } from "../components/WallpaperFrame";
 import ColorSelectUnit from "../components/ColorSelectUnit";
@@ -93,8 +92,6 @@ export default function WallpaperScreen() {
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
   const [petName, setPetName] = useState("");
   const [petId, setPetId] = useState<string | null>(null);
-  const [adLoaded, setAdLoaded] = useState(false);
-  const [adLoading, setAdLoading] = useState(false);
 
   const screenRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -175,20 +172,6 @@ export default function WallpaperScreen() {
     setWallpaperType(type);
   }, []);
 
-  const loadAd = useCallback(() => {
-    if (!GoogleAdMob.loadAppsInTossAdMob.isSupported()) return;
-    setAdLoaded(false);
-    setAdLoading(true);
-    GoogleAdMob.loadAppsInTossAdMob({
-      adGroupId: import.meta.env.VITE_ADMOB_REWARDED_AD_ID ?? "ait-ad-test-rewarded-id",
-      onEvent: (event) => {
-        if (event.type === "loaded") { setAdLoaded(true); setAdLoading(false); }
-      },
-      onError: () => setAdLoading(false),
-    });
-  }, []);
-
-  useEffect(() => { loadAd(); }, [loadAd]);
 
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
   const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, currentYear);
@@ -211,26 +194,11 @@ export default function WallpaperScreen() {
     fromAd: selectedStyle !== "Default",
   }), [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, weekPhotoMap, monthPhotoMap, petName]);
 
+  // TODO: 리워드 광고 연동 후 광고 시청 완료 시에만 navigate 허용
   const handleCtaClick = useCallback(() => {
     if (!isCtaEnabled) return;
-    if (selectedStyle === "Default") {
-      navigate("Downloading", { ...getDownloadParams(), fromAd: false });
-      return;
-    }
-    if (!GoogleAdMob.showAppsInTossAdMob.isSupported()) {
-      navigate("Downloading", getDownloadParams());
-      return;
-    }
-    GoogleAdMob.showAppsInTossAdMob({
-      onEvent: (event) => {
-        if (event.type === "userEarnedReward") {
-          navigate("Downloading", getDownloadParams());
-          loadAd();
-        }
-      },
-      onError: () => {},
-    });
-  }, [isCtaEnabled, selectedStyle, navigate, getDownloadParams, loadAd]);
+    navigate("Downloading", getDownloadParams());
+  }, [isCtaEnabled, navigate, getDownloadParams]);
 
   return (
     <div ref={screenRef} style={s.screen}>
@@ -338,11 +306,11 @@ export default function WallpaperScreen() {
         </div>
         <div style={s.ctaContainer}>
           <button
-            disabled={!isCtaEnabled || adLoading}
-            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled && !adLoading ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled && !adLoading ? "pointer" : "default" }}
+            disabled={!isCtaEnabled}
+            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled ? "pointer" : "default" }}
             onClick={handleCtaClick}
           >
-            {adLoading ? "광고 준비 중..." : selectedStyle === "Default" ? "다운받기" : "광고보고 다운받기"}
+            다운받기
           </button>
         </div>
       </div>

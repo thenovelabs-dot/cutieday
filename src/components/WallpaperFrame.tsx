@@ -6,7 +6,7 @@ const DEFAULT_BG = "#5e96df";
 const BADGE_TEXT_COLOR = "#375e92";
 const KO_MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 
-type WeekKey = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
+export type WeekKey = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 const WEEK_DAYS: { key: WeekKey; label: string }[] = [
   { key: "Mon", label: "월" }, { key: "Tue", label: "화" },
   { key: "Wed", label: "수" }, { key: "Thu", label: "목" },
@@ -35,7 +35,7 @@ export interface WallpaperFrameProps {
 }
 
 // ── 주별 포토 셀 절대 좌표 (375×812 기준) ─────────────────────
-const WEEK_CELLS: Record<WallpaperFrameStyle, Record<WeekKey, CellRect>> = {
+export const WEEK_CELLS: Record<WallpaperFrameStyle, Record<WeekKey, CellRect>> = {
   Default:  { Mon:{x:40,y:345,w:96,h:104}, Tue:{x:139,y:345,w:96,h:104}, Wed:{x:40,y:453,w:96,h:104}, Thu:{x:139,y:453,w:96,h:104}, Fri:{x:239,y:345,w:96,h:157}, Sat:{x:40,y:560,w:196,h:104}, Sun:{x:239,y:506,w:96,h:157} },
   Postcard: { Mon:{x:125,y:322,w:57,h:76}, Tue:{x:204,y:333,w:58,h:76}, Wed:{x:136,y:419,w:58,h:76}, Thu:{x:204,y:419,w:58,h:76}, Fri:{x:136,y:506,w:58,h:76}, Sat:{x:204,y:506,w:58,h:76}, Sun:{x:136,y:593,w:58,h:76} },
   Polaroid: { Mon:{x:69,y:330,w:73,h:85},  Tue:{x:151,y:330,w:73,h:85}, Wed:{x:69,y:443,w:73,h:85},  Thu:{x:151,y:443,w:73,h:85}, Fri:{x:234,y:330,w:73,h:141}, Sat:{x:69,y:556,w:155,h:85}, Sun:{x:234,y:499,w:73,h:141} },
@@ -46,7 +46,7 @@ const WEEK_CELLS: Record<WallpaperFrameStyle, Record<WeekKey, CellRect>> = {
 };
 
 // ── 월별 그리드 컨테이너 영역 (좌상단 + 크기) ─────────────────
-const MONTH_GRID: Record<WallpaperFrameStyle, CellRect> = {
+export const MONTH_GRID: Record<WallpaperFrameStyle, CellRect> = {
   Default:  { x:40,  y:352, w:295, h:294 },
   Postcard: { x:40,  y:340, w:295, h:295 },
   Polaroid: { x:42,  y:356, w:295, h:290 },
@@ -57,11 +57,11 @@ const MONTH_GRID: Record<WallpaperFrameStyle, CellRect> = {
 };
 
 
-type SvgLayer = { src: string; x: number; y: number; w: number; h: number };
+export type SvgLayer = { src: string; x: number; y: number; w: number; h: number };
 
 // ── Postcard/Polaroid Month 셀 좌표 (피그마 정확 좌표 + rotation) ─────────
 // 5th element = CSS rotation in degrees (Figma rotation field, converted from radians)
-const POSTCARD_MONTH_CELLS: [number,number,number,number,number][] = [
+export const POSTCARD_MONTH_CELLS: [number,number,number,number,number][] = [
   // Row 0 (days 1–7): rotation −3.724°, actual cell 35×46, position = bbox-center − half-actual-size
   [45,353,35,46,-3.724],[87,351,35,46,-3.724],[129,348,35,46,-3.724],[170,345,35,46,-3.724],
   [211,342,35,46,-3.724],[253,339,35,46,-3.724],[294,337,35,46,-3.724],
@@ -77,14 +77,14 @@ const POSTCARD_MONTH_CELLS: [number,number,number,number,number][] = [
   // Row 4 (days 29–31): no rotation
   [45,585,35,46,0],[86,585,35,46,0],[127,585,35,46,0],
 ];
-const POLAROID_MONTH_X = [42,84,126,169,212,254,296];
-const POLAROID_MONTH_Y = [356,417,478,539,600];
+export const POLAROID_MONTH_X = [42,84,126,169,212,254,296];
+export const POLAROID_MONTH_Y = [356,417,478,539,600];
 
 // Postcard Week Mon cell rotation (Figma rotation=-0.290129 rad = -16.623°)
-const POSTCARD_MON_ROT = -16.623;
+export const POSTCARD_MON_ROT = -16.623;
 
 // ── 배경 레이어 (포토 셀 뒤쪽) ────────────────────────────────
-function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, daysInMonth = 31): SvgLayer[] {
+export function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, daysInMonth = 31): SvgLayer[] {
   const dark = bgColor === "#000000" || bgColor === "#232323";
   if (style === "Postcard")
     return [{ src: BASE+(isWeek ? "postcardWeek.svg" : `postcardMonth${daysInMonth}.svg`), x: isWeek?108:40, y: isWeek?308:332, w: isWeek?159:296, h: isWeek?366:302 }];
@@ -105,7 +105,7 @@ function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, 
 }
 
 // ── 오버레이 레이어 (포토 셀 앞쪽) ───────────────────────────
-function overlayLayers(style: WallpaperFrameStyle, isWeek: boolean): SvgLayer[] {
+export function overlayLayers(style: WallpaperFrameStyle, isWeek: boolean): SvgLayer[] {
   if (style === "Default" && isWeek)
     return [{ src: BASE+"defaultWeekText.svg", x:113, y:427, w:218, h:232 }];
   return [];
@@ -251,13 +251,14 @@ export default function WallpaperFrame({
                 transform: cellRot ? `rotate(${cellRot}deg)` : undefined,
                 transformOrigin: "center",
               }}>
-                {src && <img src={src} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />}
+                {src && <img src={src} alt="" crossOrigin="anonymous" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />}
                 {showBadge && <DayBadge label={label} right={2} bottom={2} />}
               </div>
             );
           })
         : (() => {
-            const imgStyle: React.CSSProperties = { position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" };
+            const imgStyle: React.CSSProperties & { crossOrigin?: string } = { position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" };
+          const imgProps = { style: imgStyle, alt: "", crossOrigin: "anonymous" as const };
             const daysInMonth = new Date(year, month, 0).getDate();
 
             // Postcard Month: 피그마 정확 좌표 사용 (대각선 배치 + per-cell 회전)
@@ -274,7 +275,7 @@ export default function WallpaperFrame({
                         transform: rot ? `rotate(${rot}deg)` : undefined,
                         transformOrigin: "center",
                       }}>
-                        {src && <img src={src} alt="" style={imgStyle} />}
+                        {src && <img src={src} {...imgProps} />}
                       </div>
                     );
                   })}
@@ -293,7 +294,7 @@ export default function WallpaperFrame({
                     const src = photoMap?.[String(day)];
                     return (
                       <div key={day} style={{ position:"absolute", left:POLAROID_MONTH_X[col], top:POLAROID_MONTH_Y[row], width:37, height:43, overflow:"hidden", backgroundColor: src ? "transparent" : "#ffffff" }}>
-                        {src && <img src={src} alt="" style={imgStyle} />}
+                        {src && <img src={src} {...imgProps} />}
                       </div>
                     );
                   })}

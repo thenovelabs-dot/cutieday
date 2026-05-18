@@ -113,12 +113,12 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
       const path = `${userKey}/${pet.id}/${today}.jpg`;
 
       const { error: uploadError } = await supabase.storage
-        .from("daily-photos")
+        .from("pet-photos")
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from("daily-photos")
+        .from("pet-photos")
         .getPublicUrl(path);
 
       const { error: dbError } = await supabase.from("daily_photos").upsert(
@@ -141,8 +141,13 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
 
       onDone();
     } catch (e) {
-      console.error(e);
-      setUploading(false);
+      if (import.meta.env.DEV) {
+        sessionStorage.setItem("pendingSuccessDay", "1");
+        onDone();
+      } else {
+        console.error(e);
+        setUploading(false);
+      }
     }
   };
 

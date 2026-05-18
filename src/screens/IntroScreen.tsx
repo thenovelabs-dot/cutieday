@@ -1,18 +1,9 @@
-import { Button } from "@toss/tds-mobile";
+import React from "react";
 
-// TODO: 로컬 에셋으로 교체 필요 (Figma 에셋 URL은 7일 후 만료)
-const IMG_PHONE_1 =
-  "https://www.figma.com/api/mcp/asset/7f043298-c6ca-4a1e-9173-c74a2203c758";
-const IMG_PHONE_2 =
-  "https://www.figma.com/api/mcp/asset/ccf456d2-3e91-4619-a29e-8430b6b83f91";
-const IMG_PHONE_3 =
-  "https://www.figma.com/api/mcp/asset/c3741828-7c9c-489d-8e8d-b4265e0e59e4";
-const ICON_PET =
-  "https://www.figma.com/api/mcp/asset/bb7951da-c85d-4cdb-bb8b-444101770b62"; // 발바닥
-const ICON_CAMERA =
-  "https://www.figma.com/api/mcp/asset/88c3938a-4bdf-4bfb-bb81-57f25d920d64"; // 카메라
-const ICON_CALENDAR =
-  "https://www.figma.com/api/mcp/asset/44e94cb2-9638-4281-947e-00bc6737a4af"; // 달력
+const IMG_PHONES = "/assets/img_phone.svg";
+const ICON_DOG = "/assets/onboarding-icon-dog.svg";
+const ICON_CAMERA = "/assets/intro-icon-camera.svg";
+const ICON_PHONE = "/assets/intro-phone.svg";
 
 interface Props {
   onLogin: () => void;
@@ -20,7 +11,7 @@ interface Props {
 
 const steps = [
   {
-    icon: ICON_PET,
+    icon: ICON_DOG,
     title: "반려동물 정보를 등록해요",
     desc: "이름과 종을 등록해주세요.",
     hasBar: true,
@@ -32,7 +23,7 @@ const steps = [
     hasBar: true,
   },
   {
-    icon: ICON_CALENDAR,
+    icon: ICON_PHONE,
     title: "매일의 귀여움을 배경화면으로 만들어요",
     desc: "주·달별로 귀여운 배경화면을 만들 수 있어요.",
     hasBar: false,
@@ -56,9 +47,7 @@ export default function IntroScreen({ onLogin }: Props) {
         {/* 폰 목업 카드 */}
         <div style={s.phonesWrapper}>
           <div style={s.phonesCard}>
-            {[IMG_PHONE_1, IMG_PHONE_2, IMG_PHONE_3].map((src, i) => (
-              <img key={i} src={src} alt="" style={s.phoneImg} />
-            ))}
+            <img src={IMG_PHONES} alt="" style={s.phoneImg} />
           </div>
         </div>
 
@@ -85,9 +74,9 @@ export default function IntroScreen({ onLogin }: Props) {
       <div style={s.bottomCta}>
         <div style={s.gradient} />
         <div style={s.buttonWrapper}>
-          <Button style={{ width: "100%" }} onClick={onLogin}>
+          <button style={s.ctaButton} onClick={onLogin}>
             자세히보기
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -142,11 +131,9 @@ const s: Record<string, React.CSSProperties> = {
     padding: "24px 16px",
   },
   phoneImg: {
-    width: 71,
-    height: 154,
-    objectFit: "cover",
-    borderRadius: 8,
-    border: "3px solid rgba(255,255,255,0.68)",
+    width: "100%",
+    height: "auto",
+    display: "block",
   },
   stepper: {
     padding: "24px 24px 0",
@@ -154,7 +141,7 @@ const s: Record<string, React.CSSProperties> = {
   stepRow: {
     display: "flex",
     gap: 12,
-    alignItems: "flex-start",
+    alignItems: "stretch",
   },
   stepLeft: {
     display: "flex",
@@ -179,7 +166,7 @@ const s: Record<string, React.CSSProperties> = {
     borderRadius: 41,
   },
   stepContent: {
-    paddingBottom: 16,
+    paddingBottom: 22.5,
     paddingTop: 2,
     display: "flex",
     flexDirection: "column",
@@ -212,5 +199,19 @@ const s: Record<string, React.CSSProperties> = {
   },
   buttonWrapper: {
     padding: "0 20px 20px",
+  },
+  ctaButton: {
+    width: "100%",
+    height: 56,
+    backgroundColor: "#508FE1",
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: 590,
+    border: "none",
+    borderRadius: 16,
+    cursor: "pointer",
+    outline: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
   },
 };

@@ -94,10 +94,35 @@ interface Props {
 export default function CalendarMonthPicker({ initialYear, initialMonth, onConfirm, onClose }: Props) {
   const [tempYear, setTempYear] = useState(initialYear);
   const [tempMonth, setTempMonth] = useState(initialMonth);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setOpen(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setTimeout(onClose, 280);
+  }, [onClose]);
 
   return (
-    <div style={s.overlay} onClick={onClose}>
-      <div style={s.sheet} onClick={(e) => e.stopPropagation()}>
+    <div
+      style={{
+        ...s.overlay,
+        backgroundColor: open ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0)",
+        transition: "background-color 0.28s ease",
+      }}
+      onClick={handleClose}
+    >
+      <div
+        style={{
+          ...s.sheet,
+          transform: open ? "translateY(0)" : "translateY(100%)",
+          transition: "transform 0.28s cubic-bezier(0.32,0.72,0,1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={s.handleArea}>
           <div style={s.handle} />
         </div>
@@ -118,8 +143,8 @@ export default function CalendarMonthPicker({ initialYear, initialMonth, onConfi
         </div>
 
         <div style={s.btnRow}>
-          <button style={s.btnClose} onClick={onClose}>닫기</button>
-          <button style={s.btnConfirm} onClick={() => onConfirm(tempYear, tempMonth)}>확인</button>
+          <button style={s.btnClose} onClick={handleClose}>닫기</button>
+          <button style={s.btnConfirm} onClick={() => { setOpen(false); setTimeout(() => onConfirm(tempYear, tempMonth), 280); }}>확인</button>
         </div>
       </div>
     </div>
@@ -162,15 +187,15 @@ const s: Record<string, React.CSSProperties> = {
   overlay: {
     position: "fixed",
     inset: 0,
-    backgroundColor: "rgba(0,0,0,0.2)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
     zIndex: 1000,
+    padding: 10,
   },
   sheet: {
     backgroundColor: "#fff",
-    borderRadius: "28px 28px 0 0",
+    borderRadius: 28,
     paddingBottom: 20,
     width: "100%",
     boxSizing: "border-box",
@@ -189,7 +214,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   pickerRow: {
     display: "flex",
-    gap: 19,
+    gap: 12,
     paddingTop: 20,
     paddingLeft: 20,
     paddingRight: 20,

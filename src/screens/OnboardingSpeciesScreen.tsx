@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Button } from "@toss/tds-mobile";
+import AppNav from "../components/AppNav";
 
-// TODO: 로컬 에셋으로 교체 필요 (Figma URL 7일 후 만료)
-const ICON_DOG = "https://www.figma.com/api/mcp/asset/97941d6d-8a0d-4fc1-81d5-a057817624ba";
-const ICON_CAT = "https://www.figma.com/api/mcp/asset/668705a5-f918-4527-8c84-4326ade64594";
-const ICON_OTHER = "https://www.figma.com/api/mcp/asset/faa9065c-9df7-4a2f-97c5-6b59c9d4468e";
+const ICON_DOG = "/assets/onboarding-icon-dog.svg";
+const ICON_CAT = "/assets/onboarding-icon-cat.svg";
+const ICON_OTHER = "/assets/onboarding-icon-other.svg";
 
 type Species = "강아지" | "고양이" | "기타";
 
@@ -22,6 +21,7 @@ const OPTIONS: { label: Species; icon: string }[] = [
 export default function OnboardingSpeciesScreen({ onNext, onBack }: Props) {
   const [selected, setSelected] = useState<Species | null>(null);
   const [breed, setBreed] = useState("");
+  const [breedFocused, setBreedFocused] = useState(false);
 
   const canNext =
     selected !== null && (selected !== "기타" || breed.trim().length > 0);
@@ -33,6 +33,8 @@ export default function OnboardingSpeciesScreen({ onNext, onBack }: Props) {
 
   return (
     <div style={s.container}>
+      <style>{`.breed-input::placeholder { color: rgba(3,24,50,0.46); }`}</style>
+      <AppNav showTitle onBack={onBack} />
       <div style={s.content}>
         {/* 프로그레스 바 */}
         <div style={s.progressWrap}>
@@ -59,17 +61,15 @@ export default function OnboardingSpeciesScreen({ onNext, onBack }: Props) {
                 onClick={() => setSelected(label)}
                 style={{
                   ...s.optionCard,
-                  backgroundColor: isSelected ? "#EBF3FE" : "#F9FAFB",
-                  border: isSelected
-                    ? "1.5px solid #3182F6"
-                    : "1.5px solid transparent",
+                  backgroundColor: isSelected ? "#D1D6DB" : "#F9FAFB",
                 }}
               >
                 <img src={icon} alt={label} style={s.optionIcon} />
                 <span
                   style={{
                     ...s.optionLabel,
-                    color: isSelected ? "#3182F6" : "#4E5968",
+                    color: isSelected ? "#333D4B" : "#4E5968",
+                    fontWeight: isSelected ? 700 : 510,
                   }}
                 >
                   {label}
@@ -82,12 +82,22 @@ export default function OnboardingSpeciesScreen({ onNext, onBack }: Props) {
         {/* 그외 선택 시 품종 입력 */}
         {selected === "기타" && (
           <div style={s.breedWrap}>
+            <p style={{ ...s.breedLabel, color: breedFocused ? "#2272EB" : "rgba(0,12,30,0.8)" }}>반려동물 종</p>
             <input
-              style={s.breedInput}
-              placeholder="반려동물 종을 입력해주세요"
+              style={{
+                ...s.breedInput,
+                background: breedFocused
+                  ? "linear-gradient(90deg, rgba(26,122,249,0.05) 0%, rgba(26,122,249,0.05) 100%), linear-gradient(90deg, #F9FAFB 0%, #F9FAFB 100%)"
+                  : "#F9FAFB",
+              }}
+              placeholder="반려동물 종 입력"
+              className="breed-input"
               value={breed}
               onChange={(e) => setBreed(e.target.value)}
+              onFocus={() => setBreedFocused(true)}
+              onBlur={() => setBreedFocused(false)}
               maxLength={20}
+              autoFocus
             />
             <p style={s.breedHint}>
               해당 종이 많아지면, 업데이트 시 캐릭터가 반영될 수 있어요.
@@ -100,20 +110,14 @@ export default function OnboardingSpeciesScreen({ onNext, onBack }: Props) {
       <div style={s.bottomCta}>
         <div style={s.gradient} />
         <div style={s.buttonRow}>
-          <Button
-            variant="weak"
-            style={{ flex: 1 }}
-            onClick={onBack}
-          >
-            이전
-          </Button>
-          <Button
-            style={{ flex: 1 }}
+          <button style={s.btnSecondary} onClick={onBack}>이전</button>
+          <button
+            style={{ ...s.btnPrimary, opacity: canNext ? 1 : 0.3 }}
             disabled={!canNext}
             onClick={handleNext}
           >
             다음
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -183,8 +187,10 @@ const s: Record<string, React.CSSProperties> = {
     gap: 4,
     padding: 18,
     borderRadius: 16,
+    border: "none",
     cursor: "pointer",
-    transition: "all 0.15s",
+    transition: "background-color 0.15s",
+    outline: "none",
   },
   optionIcon: {
     width: 32,
@@ -197,25 +203,38 @@ const s: Record<string, React.CSSProperties> = {
     lineHeight: "18.78px",
   },
   breedWrap: {
-    padding: "16px 20px 0",
+    padding: "0 0 0",
     display: "flex",
     flexDirection: "column",
-    gap: 8,
+    gap: 0,
+    width: "100%",
+  },
+  breedLabel: {
+    margin: 0,
+    padding: "16px 24px 6px",
+    fontSize: 13,
+    fontWeight: 510,
+    color: "#2272EB",
+    lineHeight: "1.35",
   },
   breedInput: {
     width: "100%",
-    height: 52,
-    borderRadius: 10,
-    border: "1.5px solid #3182F6",
-    padding: "0 16px",
-    fontSize: 15,
-    color: "#191F28",
+    minHeight: 54,
+    borderRadius: 14,
+    border: "1px solid rgba(0,27,55,0.1)",
+    padding: "14px 16px",
+    fontSize: 17,
+    fontWeight: 510,
+    color: "rgba(0,12,30,0.8)",
     outline: "none",
     boxSizing: "border-box",
-    backgroundColor: "white",
+    background: "linear-gradient(90deg, rgba(26,122,249,0.05) 0%, rgba(26,122,249,0.05) 100%), linear-gradient(90deg, #F9FAFB 0%, #F9FAFB 100%)",
+    margin: "0 20px",
+    width: "calc(100% - 40px)",
   },
   breedHint: {
     margin: 0,
+    padding: "8px 24px 0",
     fontSize: 13,
     color: "rgba(0,19,43,0.58)",
     lineHeight: "19px",
@@ -234,5 +253,29 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     gap: 8,
     padding: "0 20px 20px",
+  },
+  btnSecondary: {
+    flex: 1,
+    height: 56,
+    backgroundColor: "rgba(7,25,76,0.05)",
+    color: "rgba(3,18,40,0.7)",
+    fontSize: 17,
+    fontWeight: 590,
+    border: "none",
+    borderRadius: 16,
+    cursor: "pointer",
+    outline: "none",
+  },
+  btnPrimary: {
+    flex: 1,
+    height: 56,
+    backgroundColor: "#508FE1",
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: 590,
+    border: "none",
+    borderRadius: 16,
+    cursor: "pointer",
+    outline: "none",
   },
 };
