@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@toss/tds-mobile";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
@@ -54,8 +54,10 @@ async function buildBlob(
 
 export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
   const imgRef = useRef<HTMLImageElement>(null);
+  const cropBoxRef = useRef<HTMLDivElement>(null);
   const imgScaleRef = useRef(1);
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const offsetRef = useRef({ x: 0, y: 0 });
 
   const [imgLoaded, setImgLoaded] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -75,6 +77,18 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
     return { x: (e as React.MouseEvent).clientX, y: (e as React.MouseEvent).clientY };
   };
 
+  const clampedOffset = (newX: number, newY: number) => {
+    const img = imgRef.current;
+    const scale = imgScaleRef.current;
+    if (img) {
+      const maxX = (img.naturalWidth * scale - CROP_SIZE) / 2;
+      const maxY = (img.naturalHeight * scale - CROP_SIZE) / 2;
+      newX = Math.max(-maxX, Math.min(maxX, newX));
+      newY = Math.max(-maxY, Math.min(maxY, newY));
+    }
+    return { x: newX, y: newY };
+  };
+
   const onDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     const p = getPointer(e);
     dragRef.current = { startX: p.x, startY: p.y, ox: offset.x, oy: offset.y };
@@ -83,13 +97,33 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
   const onDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!dragRef.current) return;
     const p = getPointer(e);
-    setOffset({
-      x: dragRef.current.ox + (p.x - dragRef.current.startX),
-      y: dragRef.current.oy + (p.y - dragRef.current.startY),
-    });
+    const next = clampedOffset(
+      dragRef.current.ox + (p.x - dragRef.current.startX),
+      dragRef.current.oy + (p.y - dragRef.current.startY),
+    );
+    offsetRef.current = next;
+    setOffset(next);
   };
 
   const onDragEnd = () => { dragRef.current = null; };
+
+  useEffect(() => {
+    const el = cropBoxRef.current;
+    if (!el) return;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current) return;
+      e.preventDefault();
+      const p = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      const next = clampedOffset(
+        dragRef.current.ox + (p.x - dragRef.current.startX),
+        dragRef.current.oy + (p.y - dragRef.current.startY),
+      );
+      offsetRef.current = next;
+      setOffset(next);
+    };
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", handleTouchMove);
+  }, []);
 
   const handleRegister = async () => {
     const img = imgRef.current;
@@ -163,13 +197,13 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
 
       <div style={s.cropArea}>
         <div
+          ref={cropBoxRef}
           style={s.cropBox}
           onMouseDown={onDragStart}
           onMouseMove={onDragMove}
           onMouseUp={onDragEnd}
           onMouseLeave={onDragEnd}
           onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
           onTouchEnd={onDragEnd}
         >
           <img
@@ -256,6 +290,7 @@ const s: Record<string, React.CSSProperties> = {
     backgroundColor: "#F2F4F6",
     cursor: "grab",
     flexShrink: 0,
+    touchAction: "none",
   },
   hint: {
     margin: 0,

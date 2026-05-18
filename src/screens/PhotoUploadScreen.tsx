@@ -31,7 +31,6 @@ export default function PhotoUploadScreen({ onCamera, onAlbum, onClose }: Props)
             <img src="/assets/icon-camera.svg" style={s.icon} alt="" />
             <span style={s.label}>사진 촬영하기</span>
           </button>
-          <div style={s.sep} />
           <button style={s.item} onClick={() => go(onAlbum)}>
             <img src="/assets/icon-album.svg" style={s.icon} alt="" />
             <span style={s.label}>앨범에서 선택하기</span>
@@ -57,5 +56,4 @@ const s: Record<string, React.CSSProperties> = {
   },
   icon: { width: 24, height: 24, flexShrink: 0 },
   label: { fontSize: 16, fontWeight: 500, color: "#191F28" },
-  sep: { height: 1, backgroundColor: "#F2F4F6" },
 };
