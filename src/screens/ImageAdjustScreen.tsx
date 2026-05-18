@@ -141,13 +141,9 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
 
       onDone();
     } catch (e) {
-      if (import.meta.env.DEV) {
-        sessionStorage.setItem("pendingSuccessDay", "1");
-        onDone();
-      } else {
-        console.error(e);
-        setUploading(false);
-      }
+      console.error(e);
+      window.alert("업로드 오류: " + (e instanceof Error ? e.message : String(e)));
+      setUploading(false);
     }
   };
 

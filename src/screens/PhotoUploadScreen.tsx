@@ -25,7 +25,6 @@ export default function PhotoUploadScreen({ onCamera, onAlbum, onClose }: Props)
       <BottomSheet
         open={open}
         onClose={() => go(onClose)}
-        header={<BottomSheet.Header>사진 업로드</BottomSheet.Header>}
       >
         <div style={s.list}>
           <button style={s.item} onClick={() => go(onCamera)}>

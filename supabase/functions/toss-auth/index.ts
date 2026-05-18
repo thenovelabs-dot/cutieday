@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 async function createSupabaseJWT(userKey: string): Promise<string> {
-  const secret = Deno.env.get("SUPABASE_JWT_SECRET")!;
+  const secret = Deno.env.get("JWT_SECRET")!;
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -54,7 +54,13 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  try {
   const { authorizationCode, referrer } = await req.json();
+
+  const mtlsClient = Deno.createHttpClient({
+    cert: Deno.env.get("TOSS_CLIENT_CERT")!,
+    key: Deno.env.get("TOSS_CLIENT_KEY")!,
+  });
 
   // 1. 인가 코드 → 액세스 토큰 교환
   const tokenRes = await fetch(
@@ -66,7 +72,8 @@ Deno.serve(async (req) => {
         "X-Client-Id": CLIENT_ID,
       },
       body: JSON.stringify({ authorizationCode, referrer }),
-    }
+      client: mtlsClient,
+    } as RequestInit & { client: Deno.HttpClient }
   );
 
   if (!tokenRes.ok) {
@@ -97,7 +104,8 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${tossAccessToken}`,
         "Content-Type": "application/json",
       },
-    }
+      client: mtlsClient,
+    } as RequestInit & { client: Deno.HttpClient }
   );
 
   if (!userRes.ok) {
@@ -151,4 +159,11 @@ Deno.serve(async (req) => {
     JSON.stringify({ userKey, isNewUser: count === 0, accessToken: supabaseToken }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
+  } catch (e) {
+    console.error("unhandled error:", e);
+    return new Response(
+      JSON.stringify({ error: "internal_error", detail: String(e) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 });
