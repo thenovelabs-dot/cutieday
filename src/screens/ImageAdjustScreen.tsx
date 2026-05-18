@@ -6,7 +6,7 @@ import { getUserKey } from "../lib/auth";
 interface Props {
   uri: string;
   onBack: () => void;
-  onDone: (streakDay: number, petName: string) => void;
+  onDone: () => void;
 }
 
 const CROP_SIZE = 335;
@@ -103,7 +103,7 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
 
       const { data: pet } = await supabase
         .from("pets")
-        .select("id, name")
+        .select("id")
         .eq("user_id", userKey)
         .limit(1)
         .single();
@@ -127,12 +127,19 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
       );
       if (dbError) throw dbError;
 
-      const { count } = await supabase
+      // 이번 주(월~오늘) 업로드 수 → HomeMonthScreen 팝업에서 읽음
+      const monday = new Date();
+      monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+      const { data: weekPhotos } = await supabase
         .from("daily_photos")
-        .select("*", { count: "exact", head: true })
-        .eq("pet_id", pet.id);
+        .select("date")
+        .eq("pet_id", pet.id)
+        .gte("date", monday.toISOString().split("T")[0])
+        .lte("date", today);
+      const streakDay = weekPhotos?.length ?? 1;
+      sessionStorage.setItem("pendingSuccessDay", streakDay.toString());
 
-      onDone(count ?? 1, (pet as { id: string; name: string }).name);
+      onDone();
     } catch (e) {
       console.error(e);
       setUploading(false);

@@ -18,10 +18,7 @@ export type Screen =
   | "PetEdit"
   // B담당
   | "HomeMonth"
-  | "HomeWeek"
-  | "SuccessPopup"
-  | "Wallpaper_Week"
-  | "Wallpaper_Month"
+  | "Wallpaper"
   | "Downloading";
 
 export type ScreenParams = {
@@ -34,11 +31,18 @@ export type ScreenParams = {
   ImageAdjust: { uri: string };
   PetEdit: undefined;
   HomeMonth: undefined;
-  HomeWeek: undefined;
-  SuccessPopup: { day: 4 | 7; petName: string };
-  Wallpaper_Week: undefined;
-  Wallpaper_Month: undefined;
-  Downloading: { type: "week" | "month" };
+  Wallpaper: { initialType?: "Week" | "Month" };
+  Downloading: {
+    frameStyle: string;
+    bgColor: string;
+    wallpaperType: "week" | "month";
+    year: number;
+    month: number;
+    week?: number;
+    photoMap: Record<string, string>;
+    petName: string;
+    fromAd: boolean;
+  };
 };
 
 interface NavEntry {

@@ -9,6 +9,9 @@ import HomeCameraScreen from "./screens/HomeCameraScreen";
 import HomeAlbumScreen from "./screens/HomeAlbumScreen";
 import ImageAdjustScreen from "./screens/ImageAdjustScreen";
 import PetEditScreen from "./screens/PetEditScreen";
+import HomeMonthScreen from "./screens/HomeMonthScreen";
+import WallpaperScreen from "./screens/WallpaperScreen";
+import DownloadingScreen from "./screens/DownloadingScreen";
 
 function Router() {
   const { current, navigate, goBack } = useNavigation();
@@ -47,7 +50,7 @@ function Router() {
         <OnboardingNameScreen
           species={current.params.species}
           breed={current.params.breed}
-          onNext={() => navigate("PhotoUpload")} // TODO: merge 전 HomeMonth로 복구
+          onNext={() => navigate("HomeMonth")}
           onBack={() => goBack()}
         />
       );
@@ -82,26 +85,21 @@ function Router() {
         <ImageAdjustScreen
           uri={(current.params as { uri: string }).uri}
           onBack={() => goBack()}
-          onDone={(streakDay, petName) => {
-            if (streakDay === 4 || streakDay === 7)
-              navigate("SuccessPopup", { day: streakDay, petName });
-            else
-              navigate("HomeMonth");
-          }}
+          onDone={() => navigate("HomeMonth")}
         />
       );
 
     case "PetEdit":
       return <PetEditScreen onBack={() => goBack()} />;
 
-    // TODO: B담당 화면 — merge 후 import 교체
-    case "SuccessPopup":
     case "HomeMonth":
-    case "HomeWeek":
-    case "Wallpaper_Week":
-    case "Wallpaper_Month":
+      return <HomeMonthScreen />;
+
+    case "Wallpaper":
+      return <WallpaperScreen />;
+
     case "Downloading":
-      return <div style={{ padding: 24 }}>🚧 {current.screen} 구현 예정 (B담당)</div>;
+      return <DownloadingScreen />;
   }
 }
 

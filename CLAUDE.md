@@ -1,6 +1,3 @@
-@docs/skills/apps-in-toss.md
-@docs/skills/tds-mobile.md
-
  오늘도 귀여웠어
 
 ## 서비스 개요
@@ -63,13 +60,18 @@ src/
    PetEditScreen-Editing — 편집 상태 (이름 입력, 종 선택 칩, 완료/닫기 버튼)
 
 ### B담당 (콘텐츠 플로우)
-6. HomeMonthScreen — 월별 달력, 날짜별 사진 썸네일, 업로드/변경하기 버튼
-7. HomeWeekScreen — 주별 보기
-8. Home-SuccessPopup — 업로드 성공 팝업 (4일차 / 7일차 2가지 상태)
-9. HomeMonthScreen-TodayUploadDone — 오늘 업로드 완료된 홈 상태
-10. WallpaperScreen_Week — 주별 배경화면 미리보기, 날짜 선택 바텀시트(WallpaperScreen_Week-Sheet) 포함
-11. WallpaperScreen_Month — 월별 배경화면 미리보기, 날짜 선택 바텀시트(WallpaperScreen_Month-Sheet) 포함
-12. DownloadingScreen — 생성 중 / 완료 / 실패 3가지 상태 관리, 하단 배너 광고 항상 노출
+6. HomeScreen — 단일 화면, 내부 `calendarType` 상태("Month" | "Week")로 월별/주별 전환
+   - Month 상태: 월별 달력, 날짜별 사진 썸네일, 날짜 클릭 시 Day_Upload 변경
+   - Week 상태: 주별 보기
+   - 탭 전환은 화면 이동이 아닌 내부 상태 변경 (navigate 호출 없음)
+   - 파일명: HomeMonthScreen.tsx (실질적으로 HomeScreen 역할)
+7. Home-SuccessPopup — 업로드 성공 팝업 (4일차 / 7일차 2가지 상태)
+8. WallpaperScreen — 단일 화면, 내부 `wallpaperType` 상태("Week" | "Month")로 주별/월별 전환
+   - Week 상태: 주별 배경화면 미리보기, 날짜 선택 바텀시트(CalendarWeekPicker) 포함
+   - Month 상태: 월별 배경화면 미리보기, 날짜 선택 바텀시트(CalendarMonthPicker) 포함
+   - 탭 전환은 화면 이동이 아닌 내부 상태 변경 (navigate 호출 없음)
+   - 파일명: WallpaperScreen.tsx
+9. DownloadingScreen — 생성 중 / 완료 / 실패 3가지 상태 관리, 하단 배너 광고 항상 노출
     // react-native-view-shot으로 캡처 후 기기 갤러리에 저장
 
 ## 화면 전환 플로우
@@ -79,7 +81,7 @@ src/
 IntroScreen (서비스 소개)
   → [자세히보기 버튼] → 토스 로그인 실행
   → 로그인 성공 + 신규유저 → OnboardingSpeciesScreen
-  → 로그인 성공 + 기존유저 → HomeMonthScreen
+  → 로그인 성공 + 기존유저 → HomeScreen
 
 OnboardingSpeciesScreen (종 선택)
   → 강아지/고양이 선택 시: [다음] 활성화 → OnboardingNameScreen
@@ -90,24 +92,23 @@ OnboardingNameScreen (이름 입력)
     - 정상: 파란 테두리 입력필드
     - 10자 초과: 빨간 테두리 + 에러 메시지 ("10자 이내로 입력해주세요")
     - 특수문자: 빨간 테두리 + 에러 메시지
-  → 유효한 이름 입력 완료 → [시작하기] 활성화 → HomeMonthScreen
+  → 유효한 이름 입력 완료 → [시작하기] 활성화 → HomeScreen
 ```
 
 ### 홈 (B담당)
 ```
-HomeMonthScreen (월별 달력 - 사진 미업로드 상태)
-  → 상단 [주별] 탭 → HomeWeekScreen
+HomeScreen (calendarType = "Month" — 사진 미업로드 상태)
+  → 상단 [주별] 탭 → calendarType = "Week" 로 내부 상태 전환 (화면 이동 아님)
   → 하단 [업로드하기] 버튼 탭 → PhotoUploadScreen (바텀시트)
-  → 하단 [{몽치} 배경화면 만들기] 배너 탭 → WallpaperScreen_Week
+  → 하단 [{몽치} 배경화면 만들기] 배너 탭 → WallpaperScreen
 
-HomeMonthScreen (월별 달력 - 사진 업로드 완료 상태)
+HomeScreen (calendarType = "Month" — 사진 업로드 완료 상태)
   // 오늘 날짜 셀에 사진 썸네일 표시, 하단에 오늘의 사진 + [변경하기] 버튼 노출
-  → 상단 [주별] 탭 → HomeWeekScreen
+  → 상단 [주별] 탭 → calendarType = "Week" 로 내부 상태 전환
   → 하단 [변경하기] 버튼 → PhotoUploadScreen (사진 교체)
-  → HomeMonthScreen-TodayUploadDone: 업로드 완료 후 최종 홈 상태
 
-HomeWeekScreen (주별 달력)
-  → 상단 [월별] 탭 → HomeMonthScreen
+HomeScreen (calendarType = "Week")
+  → 상단 [월별] 탭 → calendarType = "Month" 로 내부 상태 전환
 
 PhotoUploadScreen (업로드 방식 선택 바텀시트)
   → [사진 촬영하기] → Home-Camera (카메라 실행)
@@ -130,14 +131,14 @@ ImageAdjustScreen (이미지 크롭/조정)
         - 타이틀: "4일차", 서브: "기록 성공!"
         - 요일 스트릭 표시 (월화수목금토일, 달성한 날 파란 발바닥 아이콘)
         - 메시지: "3일만 더 업로드하면 주간 배경화면을 만들 수 있어요!"
-        - [확인했어요] → 팝업 닫기 → HomeMonthScreen
+        - [확인했어요] → 팝업 닫기 → HomeScreen
       - 7일차: Home-SuccessPopup (7일차 팝업)
         // 7일차 : "닫기" = 닫기, "만들러가기" : 배경화면 만들기 페이지로 이동 (Frame 5537 주석)
         - 타이틀: "7일차", 서브: "기록 성공!"
         - 요일 스트릭 표시 (7일 모두 파란 발바닥 아이콘)
         - 메시지: "일주일 업로드를 성공했어요! 주간 배경화면을 바로 만들어보세요."
-        - [닫기] → 팝업 닫기 → HomeMonthScreen
-        - [만들러가기] → WallpaperScreen_Week
+        - [닫기] → 팝업 닫기 → HomeScreen
+        - [만들러가기] → WallpaperScreen
 ```
 
 ### 사진 업로드 (A담당)
@@ -150,34 +151,32 @@ ImageAdjustScreen (이미지 크롭/조정)
   → [돌아가기] → PhotoUploadScreen
   → [등록하기] → 이미지 압축(500KB 이하) → Supabase Storage 업로드
     → 업로드 성공:
-      - 1~3일차: 특별 반응 없이 HomeMonthScreen으로 복귀
-      - 4일차: "4일차" 축하 팝업 노출 → [확인하러 가기] → HomeMonthScreen
+      - 1~3일차: 특별 반응 없이 HomeScreen으로 복귀
+      - 4일차: "4일차" 축하 팝업 노출 → [확인하러 가기] → HomeScreen
       - 7일차: "7일차" 축하 팝업 노출 → [닫기] or [만들어보기] → WallpaperScreen
 ```
 
 ### 배경화면 다운로드 (B담당)
 ```
-WallpaperScreen_Week (주별 배경화면 미리보기)
+WallpaperScreen (wallpaperType = "Week" — 주별 배경화면 미리보기)
   → 최초 진입 시: 버튼 텍스트 "다운받기" (광고 미적용 상태)
-  → 날짜 드롭다운 탭 → WallpaperScreen_Week-Sheet (바텀시트)
-    - 피커: 년 / 월 / 주차 (1주차, 2주차, 3주차...)
-    - [확인] 버튼: 날짜 선택 전까지 비활성화 (회색) // 비활성화된 경우
+  → 날짜 드롭다운 탭 → 바텀시트 (CalendarWeekPicker: 년/월/주차)
+    - [확인] 버튼: 날짜 선택 전까지 비활성화 (회색)
     - [확인] 버튼: 날짜 선택 완료 시 활성화 (파란색)
     - [닫기] → 바텀시트 닫힘
-  → 상단 [월별] 탭 → WallpaperScreen_Month
+  → 상단 [월별] 탭 → wallpaperType = "Month" 로 내부 상태 전환 (navigate 호출 없음)
   → [광고보고 다운받기] 버튼 탭 → RewardAds
 
-WallpaperScreen_Month (월별 배경화면 미리보기)
-  → 날짜 드롭다운 탭 → WallpaperScreen_Month-Sheet (바텀시트)
-    - 피커: 년 / 월
+WallpaperScreen (wallpaperType = "Month" — 월별 배경화면 미리보기)
+  → 날짜 드롭다운 탭 → 바텀시트 (CalendarMonthPicker: 년/월)
     - [확인] 활성/비활성 동일 규칙 적용
     - [닫기] → 바텀시트 닫힘
-  → 상단 [주별] 탭 → WallpaperScreen_Week
+  → 상단 [주별] 탭 → wallpaperType = "Week" 로 내부 상태 전환 (navigate 호출 없음)
   → [광고보고 다운받기] 버튼 탭 → RewardAds
 
 RewardAds (리워드 광고)
   → 광고 시청 완료 → Download-ing (생성 중)
-  → 광고 시청 실패/스킵 → WallpaperScreen_Week or Month (버튼 비활성 유지)
+  → 광고 시청 실패/스킵 → WallpaperScreen (버튼 비활성 유지)
 
 Download-ing (생성 중/완료/실패 화면)
   // 생성 중, 완료, 실패 모든 상태에서 하단에 배너 광고("봄맞이 특가 세일 · AD") 노출
@@ -198,7 +197,7 @@ Download-ing (생성 중/완료/실패 화면)
   [실패 상태]
   - 타이틀: "앗! 배경화면 생성에 실패했어요"
   - 서브: "일시적인 문제니 다시시도해주세요."
-  - [다시 만들기] 버튼 → WallpaperScreen_Week or Month
+  - [다시 만들기] 버튼 → WallpaperScreen
 ```
 
 ### 반려동물 정보 편집 (A담당)
