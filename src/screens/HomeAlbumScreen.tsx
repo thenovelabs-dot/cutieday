@@ -28,12 +28,7 @@ export default function HomeAlbumScreen({ onSelect, onBack }: Props) {
         style={{ display: "none" }}
         onChange={handleChange}
       />
-      <div style={s.nav}>
-        <button style={s.backBtn} onClick={onBack}>
-          ← 돌아가기
-        </button>
-      </div>
-      <div style={s.center}>
+<div style={s.center}>
         <p style={s.hint}>앨범이 열리지 않으면</p>
         <button style={s.trigger} onClick={() => inputRef.current?.click()}>
           앨범 열기

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigation } from "../lib/navigation";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
@@ -40,6 +40,8 @@ const ArrowRight = () => (
 
 export default function HomeMonthScreen() {
   const { navigate } = useNavigation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingDateRef = useRef<string>("");
 
   const today = new Date();
   const todayStr = formatDate(today);
@@ -206,6 +208,19 @@ export default function HomeMonthScreen() {
             )}
           </div>
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              e.target.value = "";
+              navigate("ImageAdjust", { uri: URL.createObjectURL(file), date: pendingDateRef.current });
+            }}
+          />
+
           {/* 날짜 + 업로드 카드 — 날짜 클릭 or 기본(현재달=오늘/다른달=1일), 미래는 업로드 불가 */}
           <div style={s.uploadSection}>
             <p style={s.dateLabel}>{cardMonth}월{cardDayNum}일</p>
@@ -213,8 +228,8 @@ export default function HomeMonthScreen() {
               type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
               petName={pet?.name ?? "반려동물"}
               imageUrl={photoMap.get(activeDateStr)}
-              onUpload={() => navigate("PhotoUpload", { date: activeDateStr })}
-              onChangePhoto={() => navigate("PhotoUpload", { date: activeDateStr })}
+              onUpload={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
+              onChangePhoto={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
             />
           </div>
         </div>
