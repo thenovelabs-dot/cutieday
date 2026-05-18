@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigation } from "../lib/navigation";
+import AppNav from "../components/AppNav";
 import { supabase } from "../lib/supabase";
+import { getUserKey } from "../lib/auth";
+import { GoogleAdMob } from "@apps-in-toss/web-framework";
 import SegmentText from "../components/SegmentText";
 import WallpaperFrame, { WALLPAPER_STYLES } from "../components/WallpaperFrame";
 import ColorSelectUnit from "../components/ColorSelectUnit";
@@ -89,6 +92,9 @@ export default function WallpaperScreen() {
   const [weekPhotoMap, setWeekPhotoMap] = useState<Record<string, string>>({});
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
   const [petName, setPetName] = useState("");
+  const [petId, setPetId] = useState<string | null>(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
 
   const screenRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -121,12 +127,15 @@ export default function WallpaperScreen() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("pets").select("name").limit(1).single();
-      if (data) setPetName(data.name);
+      const userKey = getUserKey();
+      if (!userKey) return;
+      const { data } = await supabase.from("pets").select("id, name").eq("user_id", userKey).limit(1).maybeSingle();
+      if (data) { setPetName(data.name); setPetId(data.id); }
     })();
   }, []);
 
   useEffect(() => {
+    if (!petId) return;
     const weekStart = getWeekOfMonth(weekInfo.year, weekInfo.month, weekInfo.week);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
@@ -136,22 +145,25 @@ export default function WallpaperScreen() {
       const { data } = await supabase
         .from("daily_photos")
         .select("date, image_url")
+        .eq("pet_id", petId)
         .gte("date", fmt(weekStart))
         .lte("date", fmt(weekEnd));
       setWeekPhotoMap(buildWeekPhotoMap(data ?? [], weekStart));
     })();
-  }, [weekInfo]);
+  }, [weekInfo, petId]);
 
   useEffect(() => {
+    if (!petId) return;
     (async () => {
       const { data } = await supabase
         .from("daily_photos")
         .select("date, image_url")
+        .eq("pet_id", petId)
         .gte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-01`)
         .lte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-31`);
       setMonthPhotoMap(buildMonthPhotoMap(data ?? []));
     })();
-  }, [monthInfo]);
+  }, [monthInfo, petId]);
 
   const handleScroll = useCallback(() => {
     const el = carouselRef.current;
@@ -163,6 +175,21 @@ export default function WallpaperScreen() {
     setWallpaperType(type);
   }, []);
 
+  const loadAd = useCallback(() => {
+    if (!GoogleAdMob.loadAppsInTossAdMob.isSupported()) return;
+    setAdLoaded(false);
+    setAdLoading(true);
+    GoogleAdMob.loadAppsInTossAdMob({
+      adGroupId: import.meta.env.VITE_ADMOB_REWARDED_AD_ID ?? "ait-ad-test-rewarded-id",
+      onEvent: (event) => {
+        if (event.type === "loaded") { setAdLoaded(true); setAdLoading(false); }
+      },
+      onError: () => setAdLoading(false),
+    });
+  }, []);
+
+  useEffect(() => { loadAd(); }, [loadAd]);
+
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
   const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, currentYear);
   const activeStyleIdx = Math.min(Math.max(Math.round(scrollX / dims.slotPitch), 0), WALLPAPER_STYLES.length - 1);
@@ -172,8 +199,42 @@ export default function WallpaperScreen() {
     ? Object.keys(weekPhotoMap).length === 7
     : Object.keys(monthPhotoMap).length === new Date(monthInfo.year, monthInfo.month, 0).getDate();
 
+  const getDownloadParams = useCallback(() => ({
+    frameStyle: selectedStyle,
+    bgColor: activeColorBg,
+    wallpaperType: wallpaperType === "Week" ? "week" as const : "month" as const,
+    year: wallpaperType === "Week" ? weekInfo.year : monthInfo.year,
+    month: wallpaperType === "Week" ? weekInfo.month : monthInfo.month,
+    week: wallpaperType === "Week" ? weekInfo.week : undefined,
+    photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
+    petName,
+    fromAd: selectedStyle !== "Default",
+  }), [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, weekPhotoMap, monthPhotoMap, petName]);
+
+  const handleCtaClick = useCallback(() => {
+    if (!isCtaEnabled) return;
+    if (selectedStyle === "Default") {
+      navigate("Downloading", { ...getDownloadParams(), fromAd: false });
+      return;
+    }
+    if (!GoogleAdMob.showAppsInTossAdMob.isSupported()) {
+      navigate("Downloading", getDownloadParams());
+      return;
+    }
+    GoogleAdMob.showAppsInTossAdMob({
+      onEvent: (event) => {
+        if (event.type === "userEarnedReward") {
+          navigate("Downloading", getDownloadParams());
+          loadAd();
+        }
+      },
+      onError: () => {},
+    });
+  }, [isCtaEnabled, selectedStyle, navigate, getDownloadParams, loadAd]);
+
   return (
     <div ref={screenRef} style={s.screen}>
+      <AppNav showTitle onBack={() => navigate("HomeMonth")} />
       <div style={s.body}>
 
         {/* 날짜 헤더 + 세그먼트 탭 */}
@@ -277,21 +338,11 @@ export default function WallpaperScreen() {
         </div>
         <div style={s.ctaContainer}>
           <button
-            disabled={!isCtaEnabled}
-            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled ? "pointer" : "default" }}
-            onClick={() => isCtaEnabled && navigate("Downloading", {
-              frameStyle: selectedStyle,
-              bgColor: activeColorBg,
-              wallpaperType: wallpaperType === "Week" ? "week" : "month",
-              year: wallpaperType === "Week" ? weekInfo.year : monthInfo.year,
-              month: wallpaperType === "Week" ? weekInfo.month : monthInfo.month,
-              week: wallpaperType === "Week" ? weekInfo.week : undefined,
-              photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
-              petName,
-              fromAd: selectedStyle !== "Default",
-            })}
+            disabled={!isCtaEnabled || adLoading}
+            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled && !adLoading ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled && !adLoading ? "pointer" : "default" }}
+            onClick={handleCtaClick}
           >
-            {selectedStyle === "Default" ? "다운받기" : "광고보고 다운받기"}
+            {adLoading ? "광고 준비 중..." : selectedStyle === "Default" ? "다운받기" : "광고보고 다운받기"}
           </button>
         </div>
       </div>

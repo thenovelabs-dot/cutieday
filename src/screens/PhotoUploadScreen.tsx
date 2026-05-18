@@ -29,12 +29,12 @@ export default function PhotoUploadScreen({ onCamera, onAlbum, onClose }: Props)
       >
         <div style={s.list}>
           <button style={s.item} onClick={() => go(onCamera)}>
-            <span style={s.icon}>📷</span>
+            <img src="/assets/icon-camera.svg" style={s.icon} alt="" />
             <span style={s.label}>사진 촬영하기</span>
           </button>
           <div style={s.sep} />
           <button style={s.item} onClick={() => go(onAlbum)}>
-            <span style={s.icon}>🖼️</span>
+            <img src="/assets/icon-album.svg" style={s.icon} alt="" />
             <span style={s.label}>앨범에서 선택하기</span>
           </button>
         </div>
@@ -56,7 +56,7 @@ const s: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     textAlign: "left",
   },
-  icon: { fontSize: 22, width: 32, textAlign: "center", flexShrink: 0 },
+  icon: { width: 24, height: 24, flexShrink: 0 },
   label: { fontSize: 16, fontWeight: 500, color: "#191F28" },
   sep: { height: 1, backgroundColor: "#F2F4F6" },
 };

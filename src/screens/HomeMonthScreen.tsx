@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { BottomSheet } from "@toss/tds-mobile";
 import { useNavigation } from "../lib/navigation";
 import { supabase } from "../lib/supabase";
+import { getUserKey } from "../lib/auth";
 import Calendar from "../components/Calendar";
 import SegmentText from "../components/SegmentText";
 import HomeUploadCard from "../components/HomeUploadCard";
@@ -8,6 +10,7 @@ import AnimalProfile from "../components/AnimalProfile";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
 import HomeSuccessPopup from "../components/HomeSuccessPopup";
+import AppNav from "../components/AppNav";
 
 interface Pet {
   id: string;
@@ -51,6 +54,7 @@ export default function HomeMonthScreen() {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [weekInfo, setWeekInfo] = useState<{ year: number; month: number; week: number } | null>(null);
   const [successDay, setSuccessDay] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | null>(null);
+  const [showUploadSheet, setShowUploadSheet] = useState(false);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth() + 1;
@@ -81,18 +85,18 @@ export default function HomeMonthScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const userKey = sessionStorage.getItem("userKey");
+      const userKey = getUserKey();
       if (!userKey) { setLoading(false); return; }
 
-      const { data: petData } = await supabase
-        .from("pets").select("id, name, species").eq("user_id", userKey).single();
-      if (cancelled || !petData) { setLoading(false); return; }
-      setPet(petData);
+      const { data: resolvedPet } = await supabase
+        .from("pets").select("id, name, species").eq("user_id", userKey).limit(1).maybeSingle();
+      if (cancelled || !resolvedPet) { setLoading(false); return; }
+      setPet(resolvedPet);
 
       const mm = String(month).padStart(2, "0");
       const { data: photoData } = await supabase
         .from("daily_photos").select("date, image_url")
-        .eq("pet_id", petData.id)
+        .eq("pet_id", resolvedPet.id)
         .gte("date", `${year}-${mm}-01`)
         .lte("date", `${year}-${mm}-${String(getDaysInMonth(year, month)).padStart(2, "0")}`);
 
@@ -157,6 +161,7 @@ export default function HomeMonthScreen() {
   return (
     <>
     <div style={s.container}>
+      <AppNav showTitle showBell />
       <div style={s.scroll}>
 
         {/* 반려동물 프로필 카드 — node 92:4794 */}
@@ -213,8 +218,8 @@ export default function HomeMonthScreen() {
               type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
               petName={pet?.name ?? "반려동물"}
               imageUrl={photoMap.get(activeDateStr)}
-              onUpload={() => navigate("PhotoUpload")}
-              onChangePhoto={() => navigate("PhotoUpload")}
+              onUpload={() => setShowUploadSheet(true)}
+              onChangePhoto={() => setShowUploadSheet(true)}
             />
           </div>
         </div>
@@ -267,6 +272,23 @@ export default function HomeMonthScreen() {
         onMakeWallpaper={() => { setSuccessDay(null); navigate("Wallpaper", { initialType: "Week" }); }}
       />
     )}
+    <BottomSheet
+      open={showUploadSheet}
+      onClose={() => setShowUploadSheet(false)}
+      header={<BottomSheet.Header>사진 업로드</BottomSheet.Header>}
+    >
+      <div style={{ padding: "0 20px 20px" }}>
+        <button style={uploadItemStyle} onClick={() => { setShowUploadSheet(false); navigate("HomeCamera"); }}>
+          <span style={{ fontSize: 22, width: 32, textAlign: "center", flexShrink: 0 }}>📷</span>
+          <span style={{ fontSize: 16, fontWeight: 500, color: "#191F28" }}>사진 촬영하기</span>
+        </button>
+        <div style={{ height: 1, backgroundColor: "#F2F4F6" }} />
+        <button style={uploadItemStyle} onClick={() => { setShowUploadSheet(false); navigate("HomeAlbum"); }}>
+          <span style={{ fontSize: 22, width: 32, textAlign: "center", flexShrink: 0 }}>🖼️</span>
+          <span style={{ fontSize: 16, fontWeight: 500, color: "#191F28" }}>앨범에서 선택하기</span>
+        </button>
+      </div>
+    </BottomSheet>
     </>
   );
 }
@@ -482,4 +504,16 @@ const s: Record<string, React.CSSProperties> = {
     lineHeight: "135%",
     color: "rgba(0,19,43,0.58)",
   },
+};
+
+const uploadItemStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 14,
+  width: "100%",
+  padding: "16px 4px",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  textAlign: "left",
 };

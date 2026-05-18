@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@toss/tds-mobile";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
+import AppNav from "../components/AppNav";
 
 interface Props {
   species: string;
@@ -23,6 +24,7 @@ function validate(name: string): ValidationError {
 export default function OnboardingNameScreen({ species, breed, onNext, onBack }: Props) {
   const [name, setName] = useState("");
   const [error, setError] = useState<ValidationError>(null);
+  const [focused, setFocused] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,21 +42,32 @@ export default function OnboardingNameScreen({ species, breed, onNext, onBack }:
 
     setSaving(true);
     try {
-      const { error: dbError } = await supabase.from("pets").insert({
-        user_id: userKey,
-        name: name.trim(),
-        species,
-        breed: breed ?? null,
-      });
-      if (dbError) throw dbError;
+      const { data: existing } = await supabase
+        .from("pets")
+        .select("id")
+        .eq("user_id", userKey)
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        const { error: dbError } = await supabase
+          .from("pets")
+          .update({ name: name.trim(), species, breed: breed ?? null })
+          .eq("id", existing.id);
+        if (dbError) throw dbError;
+      } else {
+        const { error: dbError } = await supabase.from("pets").insert({
+          user_id: userKey,
+          name: name.trim(),
+          species,
+          breed: breed ?? null,
+        });
+        if (dbError) throw dbError;
+      }
       onNext();
     } catch (e) {
-      if (import.meta.env.DEV) {
-        onNext();
-      } else {
-        console.error(e);
-        setSaving(false);
-      }
+      console.error(e);
+      setSaving(false);
     }
   };
 
@@ -68,6 +81,7 @@ export default function OnboardingNameScreen({ species, breed, onNext, onBack }:
 
   return (
     <div style={s.container}>
+      <AppNav showTitle onBack={onBack} />
       <div style={s.content}>
         {/* 프로그레스 바 */}
         <div style={s.progressWrap}>
@@ -87,12 +101,18 @@ export default function OnboardingNameScreen({ species, breed, onNext, onBack }:
           <input
             style={{
               ...s.input,
-              borderColor: hasError ? "#E53E3E" : name ? "#3182F6" : "#E5E8EB",
-              backgroundColor: hasError ? "#FFF5F5" : "white",
+              borderColor: hasError ? "#E53E3E" : focused ? "#3182F6" : "rgba(0,27,55,0.1)",
+              background: hasError
+                ? "#FFF5F5"
+                : focused
+                ? "linear-gradient(90deg, rgba(26,122,249,0.05) 0%, rgba(26,122,249,0.05) 100%), linear-gradient(90deg, #F9FAFB 0%, #F9FAFB 100%)"
+                : "#F9FAFB",
             }}
             placeholder="반려동물 이름"
             value={name}
             onChange={handleChange}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             maxLength={20}
             autoFocus
           />
@@ -106,23 +126,14 @@ export default function OnboardingNameScreen({ species, breed, onNext, onBack }:
       <div style={s.bottomCta}>
         <div style={s.gradient} />
         <div style={s.buttonRow}>
-          <Button
-            variant="weak"
-            color="dark"
-            style={{ flex: 1 }}
-            onClick={onBack}
-            disabled={saving}
-          >
-            이전
-          </Button>
-          <Button
-            style={{ flex: 1 }}
-            disabled={!canNext}
-            loading={saving}
+          <button style={s.btnSecondary} disabled={saving} onClick={onBack}>이전</button>
+          <button
+            style={{ ...s.btnPrimary, opacity: canNext && !saving ? 1 : 0.3 }}
+            disabled={!canNext || saving}
             onClick={handleNext}
           >
-            시작하기
-          </Button>
+            {saving ? "저장 중..." : "시작하기"}
+          </button>
         </div>
       </div>
     </div>
@@ -187,12 +198,13 @@ const s: Record<string, React.CSSProperties> = {
   },
   input: {
     width: "100%",
-    height: 52,
-    borderRadius: 10,
-    border: "1.5px solid",
-    padding: "0 16px",
-    fontSize: 15,
-    color: "#191F28",
+    minHeight: 54,
+    borderRadius: 14,
+    border: "1px solid",
+    padding: "14px 16px",
+    fontSize: 17,
+    fontWeight: 510,
+    color: "rgba(0,12,30,0.8)",
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color 0.15s, background-color 0.15s",
@@ -217,5 +229,29 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     gap: 8,
     padding: "0 20px 20px",
+  },
+  btnSecondary: {
+    flex: 1,
+    height: 56,
+    backgroundColor: "rgba(7,25,76,0.05)",
+    color: "rgba(3,18,40,0.7)",
+    fontSize: 17,
+    fontWeight: 590,
+    border: "none",
+    borderRadius: 16,
+    cursor: "pointer",
+    outline: "none",
+  },
+  btnPrimary: {
+    flex: 1,
+    height: 56,
+    backgroundColor: "#508FE1",
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: 590,
+    border: "none",
+    borderRadius: 16,
+    cursor: "pointer",
+    outline: "none",
   },
 };
