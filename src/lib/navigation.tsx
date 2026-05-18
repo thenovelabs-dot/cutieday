@@ -2,9 +2,11 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
+import { graniteEvent } from "@apps-in-toss/web-bridge";
 
 export type Screen =
   // A담당
@@ -76,6 +78,7 @@ export function NavigationProvider({
 
   const navigate = useCallback(
     <S extends Screen>(screen: S, params?: ScreenParams[S]) => {
+      window.history.pushState({ screen, params }, "");
       setStack((prev) => [...prev, { screen, params: params as ScreenParams[Screen] }]);
     },
     []
@@ -86,6 +89,25 @@ export function NavigationProvider({
   }, []);
 
   const canGoBack = useCallback(() => stackRef.current.length > 1, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const removeListener = graniteEvent.addEventListener("backEvent", {
+      onEvent: () => {
+        if (stackRef.current.length > 1) {
+          setStack((prev) => prev.slice(0, -1));
+        }
+      },
+    });
+    return removeListener;
+  }, []);
 
   const current = stack[stack.length - 1];
 
