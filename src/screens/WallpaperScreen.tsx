@@ -4,7 +4,7 @@ import AppNav from "../components/AppNav";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
 import SegmentText from "../components/SegmentText";
-import WallpaperFrame, { WALLPAPER_STYLES } from "../components/WallpaperFrame";
+import WallpaperFrame, { WALLPAPER_STYLES, bgLayers, overlayLayers } from "../components/WallpaperFrame";
 import ColorSelectUnit from "../components/ColorSelectUnit";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
@@ -125,6 +125,17 @@ export default function WallpaperScreen() {
     const inactiveVisualScale = inactiveW / activeW;
     return { activeW, activeH, inactiveW, inactiveTop, gap, carouselPad, slotPitch, activeScale, inactiveVisualScale };
   }, [containerWidth]);
+
+  // 프레임 SVG 이미지 프리로드
+  useEffect(() => {
+    const isWeek = wallpaperType === "Week";
+    const srcs = new Set<string>();
+    WALLPAPER_STYLES.forEach((style) => {
+      [...bgLayers(style, isWeek, "#508FE1"), ...bgLayers(style, isWeek, "#000000"),
+       ...overlayLayers(style, isWeek)].forEach((l) => srcs.add(l.src));
+    });
+    srcs.forEach((src) => { const img = new Image(); img.src = src; });
+  }, [wallpaperType]);
 
   useEffect(() => {
     (async () => {
@@ -295,17 +306,21 @@ export default function WallpaperScreen() {
                     }}
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                      <WallpaperFrame
-                        type={wallpaperType === "Week" ? "week" : "month"}
-                        frameStyle={style}
-                        previewContainer
-                        photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
-                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
-                        week={wallpaperType === "Week" ? weekInfo.week : undefined}
-                        petName={petName || "몽치"}
-                        bgColor={activeColorBg}
-                      />
+                      {Math.abs(idx - activeStyleIdx) <= 1 ? (
+                        <WallpaperFrame
+                          type={wallpaperType === "Week" ? "week" : "month"}
+                          frameStyle={style}
+                          previewContainer
+                          photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
+                          year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                          month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                          week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                          petName={petName || "몽치"}
+                          bgColor={activeColorBg}
+                        />
+                      ) : (
+                        <div style={{ width: 375, height: 812, backgroundColor: activeColorBg }} />
+                      )}
                     </div>
                   </div>
                 </div>
