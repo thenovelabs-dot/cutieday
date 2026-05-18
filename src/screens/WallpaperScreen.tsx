@@ -46,25 +46,37 @@ function dateLabelParts(
   return { main: `${prefix}${weekInfo.month}월`, sub: `${weekInfo.week}주차` };
 }
 
+function toThumbUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.searchParams.set("width", "200");
+    u.searchParams.set("quality", "60");
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 function buildWeekPhotoMap(
   photos: { date: string; image_url: string }[],
   weekStart: Date,
+  thumb = false,
 ): Record<string, string> {
   const DAY_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const map: Record<string, string> = {};
   photos.forEach(({ date, image_url }) => {
     const d = new Date(date + "T00:00:00");
     const diff = Math.round((d.getTime() - weekStart.getTime()) / 86400000);
-    if (diff >= 0 && diff < 7) map[DAY_KEYS[d.getDay()]] = image_url;
+    if (diff >= 0 && diff < 7) map[DAY_KEYS[d.getDay()]] = thumb ? toThumbUrl(image_url) : image_url;
   });
   return map;
 }
 
-function buildMonthPhotoMap(photos: { date: string; image_url: string }[]): Record<string, string> {
+function buildMonthPhotoMap(photos: { date: string; image_url: string }[], thumb = false): Record<string, string> {
   const map: Record<string, string> = {};
   photos.forEach(({ date, image_url }) => {
     const day = parseInt(date.split("-")[2], 10);
-    map[String(day)] = image_url;
+    map[String(day)] = thumb ? toThumbUrl(image_url) : image_url;
   });
   return map;
 }
@@ -89,7 +101,9 @@ export default function WallpaperScreen() {
   const [monthInfo, setMonthInfo] = useState({ year: currentYear, month: currentMonth });
   const [weekInfo, setWeekInfo] = useState({ year: currentYear, month: currentMonth, week: currentWeekNum });
   const [weekPhotoMap, setWeekPhotoMap] = useState<Record<string, string>>({});
+  const [weekThumbMap, setWeekThumbMap] = useState<Record<string, string>>({});
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
+  const [monthThumbMap, setMonthThumbMap] = useState<Record<string, string>>({});
   const [petName, setPetName] = useState("");
   const [petId, setPetId] = useState<string | null>(null);
 
@@ -161,6 +175,7 @@ export default function WallpaperScreen() {
         .gte("date", fmt(weekStart))
         .lte("date", fmt(weekEnd));
       setWeekPhotoMap(buildWeekPhotoMap(data ?? [], weekStart));
+      setWeekThumbMap(buildWeekPhotoMap(data ?? [], weekStart, true));
     })();
   }, [weekInfo, petId]);
 
@@ -174,6 +189,7 @@ export default function WallpaperScreen() {
         .gte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-01`)
         .lte("date", `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}-31`);
       setMonthPhotoMap(buildMonthPhotoMap(data ?? []));
+      setMonthThumbMap(buildMonthPhotoMap(data ?? [], true));
     })();
   }, [monthInfo, petId]);
 
@@ -311,7 +327,7 @@ export default function WallpaperScreen() {
                           type={wallpaperType === "Week" ? "week" : "month"}
                           frameStyle={style}
                           previewContainer
-                          photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
+                          photoMap={wallpaperType === "Week" ? weekThumbMap : monthThumbMap}
                           year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
                           month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
                           week={wallpaperType === "Week" ? weekInfo.week : undefined}
