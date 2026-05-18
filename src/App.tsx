@@ -15,14 +15,13 @@ import WallpaperScreen from "./screens/WallpaperScreen";
 import DownloadingScreen from "./screens/DownloadingScreen";
 
 function Router() {
-  const { current, navigate, goBack } = useNavigation();
+  const { current, navigate, reset, goBack } = useNavigation();
   const [autoLoginDone, setAutoLoginDone] = useState(false);
 
   useEffect(() => {
-    // 이미 로그인한 적 있으면 바로 홈으로
     const storedKey = getUserKey();
     if (storedKey) {
-      navigate("HomeMonth");
+      reset("HomeMonth");
     }
     setAutoLoginDone(true);
   }, []);
@@ -38,7 +37,7 @@ function Router() {
           onLogin={async () => {
             try {
               const { userKey, isNewUser } = await loginWithToss();
-              navigate(isNewUser ? "OnboardingSpecies" : "HomeMonth");
+              isNewUser ? navigate("OnboardingSpecies") : reset("HomeMonth");
             } catch (e) {
               window.alert("로그인 오류: " + (e instanceof Error ? e.message : String(e)));
             }
@@ -61,7 +60,7 @@ function Router() {
         <OnboardingNameScreen
           species={current.params.species}
           breed={current.params.breed}
-          onNext={() => navigate("HomeMonth")}
+          onNext={() => reset("HomeMonth")}
           onBack={() => goBack()}
         />
       );
