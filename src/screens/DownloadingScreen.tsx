@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigation } from "../lib/navigation";
 import AppNav from "../components/AppNav";
 import WallpaperFrame from "../components/WallpaperFrame";
@@ -306,17 +306,16 @@ export default function DownloadingScreen() {
 
   const [status, setStatus] = useState<DownloadStatus>("generating");
   const [attempt, setAttempt] = useState(0);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const blobRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     setStatus("generating");
-    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-    setDownloadUrl(null);
+    blobRef.current = null;
 
     const run = async () => {
       try {
         const blob = await renderWallpaperToBlob(photoMap, bgColor, frameStyle, wallpaperType, year, month, week, petName);
-        setDownloadUrl(URL.createObjectURL(blob));
+        blobRef.current = blob;
         setStatus("complete");
       } catch (e) {
         console.error("wallpaper capture failed:", e);
@@ -328,14 +327,25 @@ export default function DownloadingScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
-  const handleBtn = () => {
-    if (status === "complete" && downloadUrl) {
+  const handleBtn = async () => {
+    if (status === "complete" && blobRef.current) {
+      const fileName = `오늘도귀여웠어_${year}-${String(month).padStart(2, "0")}.jpg`;
+      const file = new File([blobRef.current], fileName, { type: "image/jpeg" });
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file] });
+          return;
+        } catch {
+          // 사용자 취소 시 무시
+        }
+      }
+      // Web Share API 미지원 시 fallback
+      const url = URL.createObjectURL(blobRef.current);
       const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `오늘도귀여웠어_${year}-${String(month).padStart(2, "0")}.jpg`;
-      document.body.appendChild(a);
+      a.href = url;
+      a.download = fileName;
       a.click();
-      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } else if (status === "failed") {
       setAttempt(n => n + 1);
     }
