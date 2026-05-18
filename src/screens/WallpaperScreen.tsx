@@ -95,7 +95,11 @@ export default function WallpaperScreen() {
 
   const screenRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const [scrollX, setScrollX] = useState(0);
+  const scrollXRef = useRef(0);
+  const itemInnerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const activeIdxRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const [activeStyleIdx, setActiveStyleIdx] = useState(0);
   const [containerWidth, setContainerWidth] = useState(375);
 
   useEffect(() => {
@@ -162,11 +166,43 @@ export default function WallpaperScreen() {
     })();
   }, [monthInfo, petId]);
 
+  const dimsRef = useRef(dims);
+  dimsRef.current = dims;
+
+  const applyCarouselStyles = useCallback((sx: number) => {
+    const d = dimsRef.current;
+    WALLPAPER_STYLES.forEach((_, idx) => {
+      const el = itemInnerRefs.current[idx];
+      if (!el) return;
+      const distance = Math.abs(idx - sx / d.slotPitch);
+      const t = Math.min(distance, 1);
+      el.style.opacity = String(1 - 0.4 * t);
+      el.style.transform = `scale(${1 - (1 - d.inactiveVisualScale) * t})`;
+      el.style.transformOrigin = idx >= sx / d.slotPitch ? "top left" : "top right";
+      el.style.marginTop = `${d.inactiveTop * t}px`;
+      el.style.borderRadius = `${24 - 2 * t}px`;
+    });
+    const newIdx = Math.min(Math.max(Math.round(sx / d.slotPitch), 0), WALLPAPER_STYLES.length - 1);
+    if (newIdx !== activeIdxRef.current) {
+      activeIdxRef.current = newIdx;
+      setActiveStyleIdx(newIdx);
+    }
+  }, []);
+
+  useEffect(() => {
+    applyCarouselStyles(scrollXRef.current);
+  }, [applyCarouselStyles, dims]);
+
   const handleScroll = useCallback(() => {
     const el = carouselRef.current;
     if (!el) return;
-    setScrollX(el.scrollLeft);
-  }, []);
+    scrollXRef.current = el.scrollLeft;
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      applyCarouselStyles(scrollXRef.current);
+      rafRef.current = null;
+    });
+  }, [applyCarouselStyles]);
 
   const handleTabChange = useCallback((type: WallpaperType) => {
     setWallpaperType(type);
@@ -175,7 +211,6 @@ export default function WallpaperScreen() {
 
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
   const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, currentYear);
-  const activeStyleIdx = Math.min(Math.max(Math.round(scrollX / dims.slotPitch), 0), WALLPAPER_STYLES.length - 1);
   const selectedStyle = WALLPAPER_STYLES[activeStyleIdx];
 
   // 주별: 7장 모두 있어야 활성화
@@ -240,28 +275,23 @@ export default function WallpaperScreen() {
             }}
           >
             {WALLPAPER_STYLES.map((style, idx) => {
-              const distance = Math.abs(idx - scrollX / dims.slotPitch);
-              const t = Math.min(distance, 1);
-
-              const visualScale = 1 - (1 - dims.inactiveVisualScale) * t;
-              const opacity = 1 - 0.4 * t;
-              const marginTop = dims.inactiveTop * t;
-              const borderRadius = 24 - 2 * t;
-              const transformOrigin = idx >= scrollX / dims.slotPitch ? "top left" : "top right";
+              const initT = Math.min(idx, 1);
+              const initScale = 1 - (1 - dims.inactiveVisualScale) * initT;
 
               return (
                 <div key={style} style={{ ...s.slot, width: dims.activeW, height: dims.activeH }}>
                   <div
+                    ref={(el) => { itemInnerRefs.current[idx] = el; }}
                     style={{
                       width: dims.activeW,
                       height: dims.activeH,
                       overflow: "hidden",
                       position: "relative",
-                      opacity,
-                      transform: `scale(${visualScale})`,
-                      transformOrigin,
-                      marginTop,
-                      borderRadius,
+                      opacity: 1 - 0.4 * initT,
+                      transform: `scale(${initScale})`,
+                      transformOrigin: "top left",
+                      marginTop: dims.inactiveTop * initT,
+                      borderRadius: 24 - 2 * initT,
                     }}
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
