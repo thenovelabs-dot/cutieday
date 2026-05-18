@@ -1,7 +1,7 @@
+import { useState, useEffect } from "react";
 import { NavigationProvider, useNavigation } from "./lib/navigation";
 import { loginWithToss } from "./lib/tossLogin";
-import { setUserKey } from "./lib/auth";
-import { supabase } from "./lib/supabase";
+import { setUserKey, getUserKey } from "./lib/auth";
 import IntroScreen from "./screens/IntroScreen";
 import OnboardingSpeciesScreen from "./screens/OnboardingSpeciesScreen";
 import OnboardingNameScreen from "./screens/OnboardingNameScreen";
@@ -16,6 +16,20 @@ import DownloadingScreen from "./screens/DownloadingScreen";
 
 function Router() {
   const { current, navigate, goBack } = useNavigation();
+  const [autoLoginDone, setAutoLoginDone] = useState(false);
+
+  useEffect(() => {
+    // 이미 로그인한 적 있으면 바로 홈으로
+    const storedKey = getUserKey();
+    if (storedKey) {
+      navigate("HomeMonth");
+    }
+    setAutoLoginDone(true);
+  }, []);
+
+  if (!autoLoginDone) {
+    return <div style={{ width: "100%", height: "100%", backgroundColor: "white" }} />;
+  }
 
   switch (current.screen) {
     case "Intro":

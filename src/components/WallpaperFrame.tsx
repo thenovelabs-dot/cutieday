@@ -87,19 +87,19 @@ export const POSTCARD_MON_ROT = -16.623;
 export function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, daysInMonth = 31): SvgLayer[] {
   const dark = bgColor === "#000000" || bgColor === "#232323";
   if (style === "Postcard")
-    return [{ src: BASE+(isWeek ? "postcardWeek.svg" : `postcardMonth${daysInMonth}.svg`), x: isWeek?108:40, y: isWeek?308:332, w: isWeek?159:296, h: isWeek?366:302 }];
+    return [{ src: BASE+(isWeek ? "postcardWeek.png" : `postcardMonth${daysInMonth}.png`), x: isWeek?108:40, y: isWeek?308:332, w: isWeek?159:296, h: isWeek?366:302 }];
   if (style === "Polaroid")
-    return [{ src: BASE+(isWeek ? "polaroidweek.svg" : `polaroidMonth${daysInMonth}.svg`), x: isWeek?66:40, y: isWeek?323:353, w: isWeek?244:295, h: isWeek?336:301 }];
+    return [{ src: BASE+(isWeek ? "polaroidweek.png" : `polaroidMonth${daysInMonth}.png`), x: isWeek?66:40, y: isWeek?323:353, w: isWeek?244:295, h: isWeek?336:301 }];
   if (isWeek) {
-    if (style === "Spark")  return [{ src: BASE+"sparkWeek.svg",                                          x:-119, y:-79,  w:613,  h:970  }];
-    if (style === "Apple")  return [{ src: BASE+(dark ? "appleWeek-black-gray.svg" : "appleWeek-blue.svg"), x:-345, y:-54,  w:1065, h:921  }];
-    if (style === "Note")   return [{ src: BASE+(dark ? "noteWeek-black-gray.svg"  : "noteWeek-blue.svg"),  x:-216, y:-289, w:848,  h:1391 }];
-    if (style === "Star")   return [{ src: BASE+"starWeek.svg",  x:0, y:0, w:375, h:812 }];
+    if (style === "Spark")  return [{ src: BASE+"sparkWeek.png",                                          x:-119, y:-79,  w:613,  h:970  }];
+    if (style === "Apple")  return [{ src: BASE+(dark ? "appleWeek-black-gray.png" : "appleWeek-blue.png"), x:-345, y:-54,  w:1065, h:921  }];
+    if (style === "Note")   return [{ src: BASE+(dark ? "noteWeek-black-gray.png"  : "noteWeek-blue.png"),  x:-216, y:-289, w:848,  h:1391 }];
+    if (style === "Star")   return [{ src: BASE+"starWeek.png",  x:0, y:0, w:375, h:812 }];
   } else {
-    if (style === "Spark")  return [{ src: BASE+"sparkMonth.svg",                                           x:0,    y:0,    w:375,  h:812  }];
-    if (style === "Apple")  return [{ src: BASE+(dark ? "appleMonth-black-gray.svg": "appleMonth-blue.svg"), x:-332, y:-54,  w:1039, h:921  }];
-    if (style === "Note")   return [{ src: BASE+(dark ? "noteMonth-black-gray.svg" : "noteMonth-blue.svg"),  x:-156, y:-212, w:724,  h:1236 }];
-    if (style === "Star")   return [{ src: BASE+"starMonth.svg", x:0, y:0, w:375, h:812 }];
+    if (style === "Spark")  return [{ src: BASE+"sparkMonth.png",                                           x:0,    y:0,    w:375,  h:812  }];
+    if (style === "Apple")  return [{ src: BASE+(dark ? "appleMonth-black-gray.png": "appleMonth-blue.png"), x:-332, y:-54,  w:1039, h:921  }];
+    if (style === "Note")   return [{ src: BASE+(dark ? "noteMonth-black-gray.png" : "noteMonth-blue.png"),  x:-156, y:-212, w:724,  h:1236 }];
+    if (style === "Star")   return [{ src: BASE+"starMonth.png", x:0, y:0, w:375, h:812 }];
   }
   return [];
 }
@@ -107,7 +107,7 @@ export function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: s
 // ── 오버레이 레이어 (포토 셀 앞쪽) ───────────────────────────
 export function overlayLayers(style: WallpaperFrameStyle, isWeek: boolean): SvgLayer[] {
   if (style === "Default" && isWeek)
-    return [{ src: BASE+"defaultWeekText.svg", x:113, y:427, w:218, h:232 }];
+    return [{ src: BASE+"defaultWeekText.png", x:113, y:427, w:218, h:232 }];
   return [];
 }
 
@@ -222,7 +222,7 @@ function WallpaperFrame({
   const isWeek = type === "week";
   const showBadge = false;
   const effectiveBg = (frameStyle === "Note" && bgColor === "#508FE1") ? "#ffffff" : bgColor;
-  const previewSrc = (frameStyle === "Note" && bgColor === "#508FE1") ? BASE+"PreviewContainer-black.svg" : BASE+"PreviewContainer.svg";
+  const previewSrc = (frameStyle === "Note" && bgColor === "#508FE1") ? BASE+"PreviewContainer-black.png" : BASE+"PreviewContainer.png";
 
   const frame = (
     <div style={{
@@ -231,7 +231,7 @@ function WallpaperFrame({
       flexShrink: 0, boxSizing: "border-box",
     }}>
 
-      {/* 1. 배경 SVG (포토 셀 뒤) */}
+      {/* 1. 배경 PNG (포토 셀 뒤) */}
       {bgLayers(frameStyle, isWeek, effectiveBg, new Date(year, month, 0).getDate()).map((l, i) => (
         <img key={i} src={l.src} alt="" style={{ position:"absolute", left:l.x, top:l.y, width:l.w, height:l.h, display:"block", pointerEvents:"none" }} />
       ))}

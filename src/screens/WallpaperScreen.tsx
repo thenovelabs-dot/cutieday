@@ -146,7 +146,7 @@ export default function WallpaperScreen() {
     return { activeW, activeH, inactiveW, inactiveTop, gap, carouselPad, slotPitch, activeScale, inactiveVisualScale };
   }, [containerWidth]);
 
-  // 프레임 SVG 이미지 프리로드
+  // 프레임 PNG 이미지 프리로드
   useEffect(() => {
     const isWeek = wallpaperType === "Week";
     const srcs = new Set<string>();
@@ -337,21 +337,17 @@ export default function WallpaperScreen() {
                     }}
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                      {Math.abs(idx - activeStyleIdx) <= 1 ? (
-                        <WallpaperFrame
-                          type={wallpaperType === "Week" ? "week" : "month"}
-                          frameStyle={style}
-                          previewContainer={true}
-                          photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
-                          year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                          month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
-                          week={wallpaperType === "Week" ? weekInfo.week : undefined}
-                          petName={petName || "몽치"}
-                          bgColor={activeColorBg}
-                        />
-                      ) : (
-                        <div style={{ width: 375, height: 812, backgroundColor: activeColorBg }} />
-                      )}
+                      <WallpaperFrame
+                        type={wallpaperType === "Week" ? "week" : "month"}
+                        frameStyle={style}
+                        previewContainer={true}
+                        photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
+                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                        week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                        petName={petName || "몽치"}
+                        bgColor={activeColorBg}
+                      />
                     </div>
                   </div>
                 </div>
