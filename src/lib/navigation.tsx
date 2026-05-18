@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { graniteEvent, closeView } from "@apps-in-toss/web-bridge";
+import { ConfirmDialog } from "@toss/tds-mobile";
 
 export type Screen =
   // A담당
@@ -128,70 +129,21 @@ export function NavigationProvider({
   return (
     <NavContext.Provider value={{ current, navigate, reset, goBack, canGoBack }}>
       {children}
-      {showExitModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          onClick={() => setShowExitModal(false)}
-        >
-          <div
-            style={{
-              width: "100%",
-              backgroundColor: "#fff",
-              borderRadius: "20px 20px 0 0",
-              padding: "28px 20px 40px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p style={{ fontSize: 18, fontWeight: 700, color: "#191F28", margin: "0 0 8px", textAlign: "center" }}>
-              앱을 종료할까요?
-            </p>
-            <p style={{ fontSize: 14, color: "#6B7684", margin: "0 0 24px", textAlign: "center" }}>
-              오늘도 귀여웠어를 종료해요.
-            </p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                style={{
-                  flex: 1,
-                  height: 52,
-                  borderRadius: 12,
-                  border: "none",
-                  backgroundColor: "#F2F4F6",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: "#191F28",
-                  cursor: "pointer",
-                }}
-                onClick={() => setShowExitModal(false)}
-              >
-                취소
-              </button>
-              <button
-                style={{
-                  flex: 1,
-                  height: 52,
-                  borderRadius: 12,
-                  border: "none",
-                  backgroundColor: "#508FE1",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-                onClick={() => closeView()}
-              >
-                종료하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showExitModal}
+        title="오늘도 귀여웠어를 종료할까요?"
+        onClose={() => setShowExitModal(false)}
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={() => setShowExitModal(false)}>
+            닫기
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton onClick={() => closeView()}>
+            종료하기
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
     </NavContext.Provider>
   );
 }
