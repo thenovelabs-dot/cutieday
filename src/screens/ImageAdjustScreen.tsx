@@ -216,13 +216,7 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
 
   return (
     <div style={s.container}>
-      <div style={s.header}>
-        <button style={s.backBtn} onClick={onBack}>
-          돌아가기
-        </button>
-        <span style={s.headerTitle}>사진 조정</span>
-        <div style={{ width: 72 }} />
-      </div>
+
 
       <div style={s.cropArea}>
         <div
