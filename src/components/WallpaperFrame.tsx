@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 
 const BASE = "/assets/wallpaperComponenet/";
 const ANIMAL_ICON = "/assets/wallpaper/animal-icon.svg";
@@ -215,7 +215,7 @@ function DayBadge({ label, right, bottom }: { label: string; right: number; bott
 }
 
 // ── WallpaperFrame ────────────────────────────────────────────
-export default function WallpaperFrame({
+function WallpaperFrame({
   type, frameStyle = "Default", previewContainer = true,
   photoMap, year, month, week, petName = "", bgColor = DEFAULT_BG,
 }: WallpaperFrameProps) {
@@ -349,3 +349,5 @@ export default function WallpaperFrame({
   }
   return frame;
 }
+
+export default memo(WallpaperFrame);
