@@ -376,7 +376,7 @@ export default function DownloadingScreen() {
     <>
       <div style={{ width: 375, height: 812, backgroundColor: "#fff", overflow: "hidden", display: "flex", flexDirection: "column", userSelect: "none", position: "relative" }}>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
-        <AppNav showTitle onBack={() => navigate("Wallpaper")} />
+        <AppNav showTitle onBack={() => navigate("HomeMonth")} />
 
         {/* 컨텐츠 — 네비와 CTA 사이 수직 중앙 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", overflow: "hidden", gap: 0 }}>

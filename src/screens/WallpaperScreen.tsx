@@ -118,6 +118,7 @@ export default function WallpaperScreen() {
   const itemInnerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const activeIdxRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeStyleIdx, setActiveStyleIdx] = useState(0);
   const [containerWidth, setContainerWidth] = useState(375);
 
@@ -218,11 +219,6 @@ export default function WallpaperScreen() {
       el.style.marginTop = `${d.inactiveTop * t}px`;
       el.style.borderRadius = `${24 - 2 * t}px`;
     });
-    const newIdx = Math.min(Math.max(Math.round(sx / d.slotPitch), 0), WALLPAPER_STYLES.length - 1);
-    if (newIdx !== activeIdxRef.current) {
-      activeIdxRef.current = newIdx;
-      setActiveStyleIdx(newIdx);
-    }
   }, []);
 
   useEffect(() => {
@@ -238,6 +234,15 @@ export default function WallpaperScreen() {
       applyCarouselStyles(scrollXRef.current);
       rafRef.current = null;
     });
+    if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+    scrollEndTimerRef.current = setTimeout(() => {
+      const d = dimsRef.current;
+      const newIdx = Math.min(Math.max(Math.round(scrollXRef.current / d.slotPitch), 0), WALLPAPER_STYLES.length - 1);
+      if (newIdx !== activeIdxRef.current) {
+        activeIdxRef.current = newIdx;
+        setActiveStyleIdx(newIdx);
+      }
+    }, 200);
   }, [applyCarouselStyles]);
 
   const handleTabChange = useCallback((type: WallpaperType) => {
@@ -332,17 +337,21 @@ export default function WallpaperScreen() {
                     }}
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
-                      <WallpaperFrame
-                        type={wallpaperType === "Week" ? "week" : "month"}
-                        frameStyle={style}
-                        previewContainer={false}
-                        photoMap={wallpaperType === "Week" ? weekThumbMap : monthThumbMap}
-                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
-                        week={wallpaperType === "Week" ? weekInfo.week : undefined}
-                        petName={petName || "몽치"}
-                        bgColor={activeColorBg}
-                      />
+                      {Math.abs(idx - activeStyleIdx) <= 1 ? (
+                        <WallpaperFrame
+                          type={wallpaperType === "Week" ? "week" : "month"}
+                          frameStyle={style}
+                          previewContainer={true}
+                          photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
+                          year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
+                          month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                          week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                          petName={petName || "몽치"}
+                          bgColor={activeColorBg}
+                        />
+                      ) : (
+                        <div style={{ width: 375, height: 812, backgroundColor: activeColorBg }} />
+                      )}
                     </div>
                   </div>
                 </div>
