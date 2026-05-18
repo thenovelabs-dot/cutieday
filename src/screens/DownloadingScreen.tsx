@@ -335,17 +335,20 @@ export default function DownloadingScreen() {
         try {
           await navigator.share({ files: [file] });
           return;
-        } catch {
-          // 사용자 취소 시 무시
+        } catch (e) {
+          if ((e as Error).name === "AbortError") return;
+          // AbortError가 아닌 오류는 fallback으로 진행
         }
       }
-      // Web Share API 미지원 시 fallback
+      // Web Share API 미지원 또는 실패 시 anchor fallback
       const url = URL.createObjectURL(blobRef.current);
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } else if (status === "failed") {
       setAttempt(n => n + 1);
     }
@@ -397,6 +400,7 @@ export default function DownloadingScreen() {
                 week={week}
                 photoMap={photoMap}
                 petName={petName}
+                previewContainer={false}
               />
             </div>
           </div>

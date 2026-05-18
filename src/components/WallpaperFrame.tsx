@@ -341,11 +341,7 @@ function WallpaperFrame({
   );
 
   if (!previewContainer) {
-    return (
-      <div style={{ padding:50, boxSizing:"border-box", backgroundColor: effectiveBg }}>
-        {frame}
-      </div>
-    );
+    return frame;
   }
   return frame;
 }

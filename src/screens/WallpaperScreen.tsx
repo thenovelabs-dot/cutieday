@@ -335,7 +335,7 @@ export default function WallpaperScreen() {
                         <WallpaperFrame
                           type={wallpaperType === "Week" ? "week" : "month"}
                           frameStyle={style}
-                          previewContainer
+                          previewContainer={false}
                           photoMap={wallpaperType === "Week" ? weekThumbMap : monthThumbMap}
                           year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
                           month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
