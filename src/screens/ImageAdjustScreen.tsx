@@ -214,11 +214,10 @@ export default function ImageAdjustScreen({ uri, onBack, onDone }: Props) {
             draggable={false}
             style={{
               position: "absolute",
-              width: imgLoaded ? scaledW : "auto",
-              height: imgLoaded ? scaledH : "auto",
-              top: "50%",
-              left: "50%",
-              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+              width: imgLoaded ? scaledW : 0,
+              height: imgLoaded ? scaledH : 0,
+              left: imgLoaded ? (CROP_SIZE - scaledW) / 2 + offset.x : 0,
+              top: imgLoaded ? (CROP_SIZE - scaledH) / 2 + offset.y : 0,
               userSelect: "none",
               pointerEvents: "none",
             }}
