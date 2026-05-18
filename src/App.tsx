@@ -52,44 +52,53 @@ function Router() {
         />
       );
 
-    case "PhotoUpload":
+    case "PhotoUpload": {
+      const uploadDate = (current.params as { date?: string })?.date;
       return (
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
           <HomeMonthScreen />
           <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
             <PhotoUploadScreen
-              onCamera={() => navigate("HomeCamera")}
-              onAlbum={() => navigate("HomeAlbum")}
+              onCamera={() => navigate("HomeCamera", { date: uploadDate })}
+              onAlbum={() => navigate("HomeAlbum", { date: uploadDate })}
               onClose={() => goBack()}
             />
           </div>
         </div>
       );
+    }
 
-    case "HomeCamera":
+    case "HomeCamera": {
+      const camDate = (current.params as { date?: string })?.date;
       return (
         <HomeCameraScreen
-          onCapture={(uri) => navigate("ImageAdjust", { uri })}
+          onCapture={(uri) => navigate("ImageAdjust", { uri, date: camDate })}
           onBack={() => goBack()}
         />
       );
+    }
 
-    case "HomeAlbum":
+    case "HomeAlbum": {
+      const albumDate = (current.params as { date?: string })?.date;
       return (
         <HomeAlbumScreen
-          onSelect={(uri) => navigate("ImageAdjust", { uri })}
+          onSelect={(uri) => navigate("ImageAdjust", { uri, date: albumDate })}
           onBack={() => goBack()}
         />
       );
+    }
 
-    case "ImageAdjust":
+    case "ImageAdjust": {
+      const { uri, date } = current.params as { uri: string; date?: string };
       return (
         <ImageAdjustScreen
-          uri={(current.params as { uri: string }).uri}
+          uri={uri}
+          date={date}
           onBack={() => goBack()}
           onDone={() => navigate("HomeMonth")}
         />
       );
+    }
 
     case "PetEdit":
       return <PetEditScreen onBack={() => goBack()} />;
