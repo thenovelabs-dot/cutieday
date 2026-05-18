@@ -449,6 +449,7 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     width: "100%",
     padding: "10px 20px",
+    marginBottom: 40,
     backgroundColor: "#F2F4F6",
     borderRadius: 20,
     border: "none",
