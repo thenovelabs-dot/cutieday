@@ -25,9 +25,9 @@ function validateName(v: string): string {
 }
 
 const SPECIES_ICON: Record<Species, string> = {
-  강아지: "/assets/onboarding-icon-dog.svg",
-  고양이: "/assets/onboarding-icon-cat.svg",
-  기타: "/assets/onboarding-icon-other.svg",
+  강아지: "/assets/onboarding-icon-dog.png",
+  고양이: "/assets/onboarding-icon-cat.png",
+  기타: "/assets/onboarding-icon-other.png",
 };
 const SPECIES_LABELS: Record<Species, string> = { 강아지: "강아지", 고양이: "고양이", 기타: "그외" };
 

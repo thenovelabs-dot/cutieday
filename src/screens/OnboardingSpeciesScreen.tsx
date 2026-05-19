@@ -1,9 +1,9 @@
 import { useState } from "react";
 import AppNav from "../components/AppNav";
 
-const ICON_DOG = "/assets/onboarding-icon-dog.svg";
-const ICON_CAT = "/assets/onboarding-icon-cat.svg";
-const ICON_OTHER = "/assets/onboarding-icon-other.svg";
+const ICON_DOG = "/assets/onboarding-icon-dog.png";
+const ICON_CAT = "/assets/onboarding-icon-cat.png";
+const ICON_OTHER = "/assets/onboarding-icon-other.png";
 
 type Species = "강아지" | "고양이" | "기타";
 

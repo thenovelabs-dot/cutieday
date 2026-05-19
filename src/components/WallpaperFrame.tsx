@@ -178,7 +178,8 @@ function renderSubtitle(
           <div style={{ position: "absolute", left: 204, top: 622, width: 57, pointerEvents: "none" }}>
             <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{year}년 {month}월</div>
             <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{week}주차</div>
-            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{petName} 오늘도 귀여웠어</div>
+            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>{petName}</div>
+            <div style={{ ...TEXT_BASE, fontSize: 11, lineHeight: 0.96 }}>오늘도 귀여웠어</div>
           </div>
         </>
       );
