@@ -105,7 +105,7 @@ function Router() {
           uri={uri}
           date={date}
           onBack={() => goBack()}
-          onDone={() => navigate("HomeMonth")}
+          onDone={() => reset("HomeMonth")}
         />
       );
     }
