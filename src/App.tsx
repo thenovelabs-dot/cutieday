@@ -21,18 +21,20 @@ function Router() {
 
   useEffect(() => {
     const storedKey = getUserKey();
-    if (storedKey) {
-      supabase.from("users").select("id").eq("id", storedKey).maybeSingle().then(({ data }) => {
-        if (data) {
-          reset("HomeMonth");
-        } else {
-          clearUserKey();
-        }
-        setAutoLoginDone(true);
-      });
-    } else {
+    if (!storedKey) {
       setAutoLoginDone(true);
+      return;
     }
+    // 저장된 키가 있으면 즉시 HomeMonth로 이동 (IntroScreen 노출 방지)
+    reset("HomeMonth");
+    setAutoLoginDone(true);
+    // 백그라운드에서 유저 존재 여부 확인 — 삭제된 경우 Intro로 복귀
+    supabase.from("users").select("id").eq("id", storedKey).maybeSingle().then(({ data }) => {
+      if (!data) {
+        clearUserKey();
+        reset("Intro");
+      }
+    });
   }, []);
 
   if (!autoLoginDone) {
