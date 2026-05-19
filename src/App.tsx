@@ -39,7 +39,9 @@ function Router() {
               const { userKey, isNewUser } = await loginWithToss();
               isNewUser ? navigate("OnboardingSpecies") : reset("HomeMonth");
             } catch (e) {
-              window.alert("로그인 오류: " + (e instanceof Error ? e.message : String(e)));
+              const msg = e instanceof Error ? e.message : String(e);
+              if (msg.includes("완료할 수 없") || msg.includes("cancel") || msg.includes("Cancel")) return;
+              window.alert("로그인 오류: " + msg);
             }
           }}
         />
