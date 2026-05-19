@@ -130,6 +130,8 @@ export function NavigationProvider({
       onEvent: () => {
         const currentStack = stackRef.current;
         if (currentStack.length > 1) {
+          skipPopStateRef.current = true;
+          window.history.back();
           setStack((prev) => prev.slice(0, -1));
         } else if (EXIT_ROOT_SCREENS.includes(currentStack[0].screen)) {
           setShowExitModal(true);
