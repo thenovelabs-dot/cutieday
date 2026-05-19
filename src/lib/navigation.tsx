@@ -80,6 +80,7 @@ export function NavigationProvider({
 
   const stackRef = useRef(stack);
   stackRef.current = stack;
+  const skipPopStateRef = useRef(false);
 
   const navigate = useCallback(
     <S extends Screen>(screen: S, params?: ScreenParams[S]) => {
@@ -97,14 +98,28 @@ export function NavigationProvider({
   );
 
   const goBack = useCallback(() => {
-    setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    const currentStack = stackRef.current;
+    if (currentStack.length > 1) {
+      skipPopStateRef.current = true;
+      window.history.back();
+      setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    }
   }, []);
 
   const canGoBack = useCallback(() => stackRef.current.length > 1, []);
 
   useEffect(() => {
     const handlePopState = () => {
-      setStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+      if (skipPopStateRef.current) {
+        skipPopStateRef.current = false;
+        return;
+      }
+      const currentStack = stackRef.current;
+      if (currentStack.length > 1) {
+        setStack((prev) => prev.slice(0, -1));
+      } else if (EXIT_ROOT_SCREENS.includes(currentStack[0].screen)) {
+        setShowExitModal(true);
+      }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
