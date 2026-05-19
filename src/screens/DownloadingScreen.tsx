@@ -128,7 +128,7 @@ async function renderWallpaperToBlob(
   week?: number,
   petName?: string,
 ): Promise<Blob> {
-  const W = 375, H = 812, PX = 2;
+  const W = 375, H = 812, PX = 3;
   const canvas = document.createElement("canvas");
   canvas.width = W * PX;
   canvas.height = H * PX;
