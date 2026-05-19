@@ -377,6 +377,13 @@ export default function WallpaperScreen() {
           />
         </div>
         <div style={s.ctaContainer}>
+          {!isCtaEnabled && (
+            <p style={s.ctaHelperText}>
+              {wallpaperType === "Week"
+                ? "7일을 모두 업로드해야 다운로드할 수 있어요."
+                : "한달을 모두 업로드해야 다운로드할 수 있어요."}
+            </p>
+          )}
           <button
             disabled={!isCtaEnabled}
             style={{ ...s.ctaButton, backgroundColor: isCtaEnabled ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled ? "pointer" : "default" }}
@@ -545,6 +552,17 @@ const s: Record<string, React.CSSProperties> = {
     paddingLeft: 20,
     paddingRight: 20,
     flexShrink: 0,
+  },
+  ctaHelperText: {
+    margin: 0,
+    marginBottom: 20,
+    paddingLeft: 4,
+    paddingRight: 4,
+    fontSize: 15,
+    fontWeight: 510,
+    color: "rgba(0, 19, 43, 0.58)",
+    lineHeight: 1.5,
+    textAlign: "center" as const,
   },
   ctaButton: {
     display: "block",
