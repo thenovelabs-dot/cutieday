@@ -1,6 +1,6 @@
 import React from "react";
 
-const IMG_PHONES = "/assets/img_phone.svg";
+const IMG_PHONES = "/assets/img-phone.png";
 const ICON_DOG = "/assets/onboarding-icon-dog.svg";
 const ICON_CAMERA = "/assets/intro-icon-camera.svg";
 const ICON_PHONE = "/assets/intro-phone.svg";
