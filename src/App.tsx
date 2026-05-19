@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { NavigationProvider, useNavigation } from "./lib/navigation";
 import { loginWithToss } from "./lib/tossLogin";
-import { setUserKey, getUserKey } from "./lib/auth";
+import { setUserKey, getUserKey, clearUserKey } from "./lib/auth";
+import { supabase } from "./lib/supabase";
 import IntroScreen from "./screens/IntroScreen";
 import OnboardingSpeciesScreen from "./screens/OnboardingSpeciesScreen";
 import OnboardingNameScreen from "./screens/OnboardingNameScreen";
@@ -19,6 +20,15 @@ function Router() {
   const [autoLoginDone, setAutoLoginDone] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "1") {
+      clearUserKey();
+      supabase.auth.signOut();
+      window.history.replaceState({}, "", window.location.pathname);
+      setAutoLoginDone(true);
+      return;
+    }
+
     const storedKey = getUserKey();
     if (storedKey) {
       reset("HomeMonth");
