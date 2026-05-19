@@ -19,7 +19,10 @@ function Router() {
   const [autoLoginDone, setAutoLoginDone] = useState(false);
 
   useEffect(() => {
-    // [TEST] 자동 로그인 임시 비활성화
+    const storedKey = getUserKey();
+    if (storedKey) {
+      reset("HomeMonth");
+    }
     setAutoLoginDone(true);
   }, []);
 
