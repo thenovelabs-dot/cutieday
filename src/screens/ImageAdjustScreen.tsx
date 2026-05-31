@@ -191,18 +191,7 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
       );
       if (dbError) throw dbError;
 
-      // 이번 주(월~오늘) 업로드 수 → HomeMonthScreen 팝업에서 읽음
-      const monday = new Date();
-      monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-      const { data: weekPhotos } = await supabase
-        .from("daily_photos")
-        .select("date")
-        .eq("pet_id", pet.id)
-        .gte("date", monday.toISOString().split("T")[0])
-        .lte("date", today);
-      const streakDay = weekPhotos?.length ?? 1;
-      sessionStorage.setItem("pendingSuccessDay", streakDay.toString());
-
+      sessionStorage.setItem("pendingUploadToast", "1");
       onDone();
     } catch (e) {
       console.error(e);

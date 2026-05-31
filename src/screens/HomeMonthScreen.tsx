@@ -8,7 +8,6 @@ import HomeUploadCard from "../components/HomeUploadCard";
 import AnimalProfile from "../components/AnimalProfile";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
-import HomeSuccessPopup from "../components/HomeSuccessPopup";
 import AppNav from "../components/AppNav";
 
 interface Pet {
@@ -54,7 +53,17 @@ export default function HomeMonthScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [weekInfo, setWeekInfo] = useState<{ year: number; month: number; week: number } | null>(null);
-  const [successDay, setSuccessDay] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("pendingUploadToast");
+    if (!raw) return;
+    sessionStorage.removeItem("pendingUploadToast");
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setShowToast(true);
+    toastTimerRef.current = setTimeout(() => setShowToast(false), 2000);
+  }, []);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth() + 1;
@@ -110,16 +119,6 @@ export default function HomeMonthScreen() {
     return () => { cancelled = true; };
   }, [year, month]);
 
-  // 업로드 완료 후 A담당(ImageAdjustScreen)이 저장한 pendingSuccessDay 감지
-  useEffect(() => {
-    const raw = sessionStorage.getItem("pendingSuccessDay");
-    if (!raw) return;
-    sessionStorage.removeItem("pendingSuccessDay");
-    const day = parseInt(raw, 10);
-    if (day >= 1 && day <= 7) {
-      setSuccessDay(day as 1 | 2 | 3 | 4 | 5 | 6 | 7);
-    }
-  }, []);
 
   const firstDayOffset = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
   const weekOfMonth = Math.ceil((today.getDate() + firstDayOffset) / 7);
@@ -160,6 +159,7 @@ export default function HomeMonthScreen() {
 
   return (
     <>
+    <style>{`@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
     <div style={s.container}>
       <AppNav showTitle showBell />
       <div style={s.scroll}>
@@ -275,12 +275,38 @@ export default function HomeMonthScreen() {
         }}
       />
     )}
-    {successDay && (
-      <HomeSuccessPopup
-        day={successDay}
-        onClose={() => setSuccessDay(null)}
-        onMakeWallpaper={() => { setSuccessDay(null); navigate("Wallpaper", { initialType: "Week" }); }}
-      />
+    {showToast && (
+      <div style={{
+        position: "fixed",
+        bottom: 104,
+        left: "50%",
+        transform: "translateX(-50%)",
+        backgroundColor: "white",
+        backdropFilter: "blur(15px)",
+        WebkitBackdropFilter: "blur(15px)",
+        boxShadow: "0px 2px 15px rgba(0, 27, 55, 0.1)",
+        padding: "12px 16px 12px 12px",
+        borderRadius: 9999,
+        whiteSpace: "nowrap",
+        zIndex: 100,
+        animation: "toastIn 0.2s ease-out",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#00C47C" />
+          <path d="M7 12.5L10.2 15.8L17 8.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span style={{
+          fontSize: 15,
+          fontWeight: 600,
+          lineHeight: 1.35,
+          color: "rgba(0, 12, 30, 0.8)",
+        }}>
+          업로드를 완료했어요
+        </span>
+      </div>
     )}
     </>
   );
