@@ -108,7 +108,8 @@ async function drawSubtitleCanvas(
       if (iconImg) ctx.drawImage(iconImg, 204, 599, 18, 18);
       ctx.fillText(`${year}년 ${month}월`, 204, 622);
       ctx.fillText(`${week}주차`, 204, 622 + lineH);
-      ctx.fillText(`${petName} 오늘도 귀여웠어`, 204, 622 + lineH * 2);
+      ctx.fillText(petName, 204, 622 + lineH * 2);
+      ctx.fillText(`오늘도 귀여웠어`, 204, 622 + lineH * 3);
     } else {
       if (iconImg) ctx.drawImage(iconImg, 253, 598, 18, 18);
       const tx = 253 + 18 + 6;

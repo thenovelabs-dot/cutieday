@@ -34,11 +34,34 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // 사용자 데이터 전체 삭제 (pets → daily_photos cascade 삭제)
+  // 1. Storage 이미지 삭제 (image_url에서 경로 추출)
+  const { data: photos } = await supabase
+    .from("daily_photos")
+    .select("image_url, pets!inner(user_id)")
+    .eq("pets.user_id", userId);
+
+  if (photos && photos.length > 0) {
+    const marker = "/pet-photos/";
+    const storagePaths = photos
+      .map((p: { image_url: string }) => {
+        const idx = p.image_url.indexOf(marker);
+        return idx >= 0 ? p.image_url.slice(idx + marker.length) : null;
+      })
+      .filter(Boolean) as string[];
+
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("pet-photos")
+        .remove(storagePaths);
+      if (storageError) console.error("Storage 삭제 실패:", storageError);
+    }
+  }
+
+  // 2. DB 유저 삭제 (pets → daily_photos cascade)
   const { error } = await supabase.from("users").delete().eq("id", userId);
 
   if (error) {
-    console.error("삭제 실패:", error);
+    console.error("DB 삭제 실패:", error);
     return new Response("Internal Server Error", { status: 500, headers: corsHeaders });
   }
 

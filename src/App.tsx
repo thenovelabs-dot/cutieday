@@ -25,12 +25,11 @@ function Router() {
       setAutoLoginDone(true);
       return;
     }
-    // 저장된 키가 있으면 즉시 HomeMonth로 이동 (IntroScreen 노출 방지)
     reset("HomeMonth");
     setAutoLoginDone(true);
-    // 백그라운드에서 유저 존재 여부 확인 — 삭제된 경우 Intro로 복귀
-    supabase.from("users").select("id").eq("id", storedKey).maybeSingle().then(({ data }) => {
-      if (!data) {
+    // 로그인 끊기 콜백으로 DB에서 삭제된 경우 감지
+    supabase.rpc("check_user_exists", { user_id: storedKey }).then(({ data }) => {
+      if (data === false) {
         clearUserKey();
         reset("Intro");
       }
