@@ -442,7 +442,7 @@ export default function DownloadingScreen() {
         {showToast && (
           <div style={{
             position: "absolute",
-            bottom: 104,
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
             left: "50%",
             transform: "translateX(-50%)",
             backgroundColor: "rgba(25, 31, 40, 0.88)",

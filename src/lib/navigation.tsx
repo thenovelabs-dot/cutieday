@@ -34,7 +34,7 @@ export type ScreenParams = {
   ImageAdjust: { uri: string };
   PetEdit: undefined;
   HomeMonth: undefined;
-  Wallpaper: { initialType?: "Week" | "Month" };
+  Wallpaper: { initialType?: "Week" | "Month"; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number } };
   Downloading: {
     frameStyle: string;
     bgColor: string;

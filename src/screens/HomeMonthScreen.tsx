@@ -9,6 +9,7 @@ import AnimalProfile from "../components/AnimalProfile";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
 import AppNav from "../components/AppNav";
+import SuccessPopup from "../components/SuccessPopup";
 
 interface Pet {
   id: string;
@@ -45,21 +46,33 @@ export default function HomeMonthScreen() {
   const today = new Date();
   const todayStr = formatDate(today);
 
-  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [viewDate, setViewDate] = useState(() => {
+    const uploaded = sessionStorage.getItem("pendingUploadDate");
+    if (uploaded) {
+      const [y, m] = uploaded.split("-").map(Number);
+      return new Date(y, m - 1, 1);
+    }
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
   const [calendarType, setCalendarType] = useState<"Month" | "Week">("Month");
   const [pet, setPet] = useState<Pet | null>(null);
   const [photoMap, setPhotoMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(
+    () => sessionStorage.getItem("pendingUploadDate")
+  );
   const [weekInfo, setWeekInfo] = useState<{ year: number; month: number; week: number } | null>(null);
   const [showToast, setShowToast] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPopupRef = useRef(sessionStorage.getItem("pendingSuccessPopup") as "week" | "month" | null);
+  const [successPopupType, setSuccessPopupType] = useState<"week" | "month" | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("pendingUploadToast");
     if (!raw) return;
     sessionStorage.removeItem("pendingUploadToast");
+    sessionStorage.removeItem("pendingUploadDate");
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setShowToast(true);
     toastTimerRef.current = setTimeout(() => setShowToast(false), 2000);
@@ -102,22 +115,39 @@ export default function HomeMonthScreen() {
       if (cancelled || !resolvedPet) { setLoading(false); return; }
       setPet(resolvedPet);
 
-      const mm = String(month).padStart(2, "0");
-      const { data: photoData } = await supabase
-        .from("daily_photos").select("date, image_url")
-        .eq("pet_id", resolvedPet.id)
-        .gte("date", `${year}-${mm}-01`)
-        .lte("date", `${year}-${mm}-${String(getDaysInMonth(year, month)).padStart(2, "0")}`);
+      let photoData: { date: string; image_url: string }[] | null = null;
+      if (calendarType === "Week") {
+        // 주가 월을 넘어갈 수 있으므로 실제 주 날짜 범위로 조회
+        const { data } = await supabase
+          .from("daily_photos").select("date, image_url")
+          .eq("pet_id", resolvedPet.id)
+          .gte("date", weekStartStr)
+          .lte("date", weekEndStr);
+        photoData = data;
+      } else {
+        const mm = String(month).padStart(2, "0");
+        const { data } = await supabase
+          .from("daily_photos").select("date, image_url")
+          .eq("pet_id", resolvedPet.id)
+          .gte("date", `${year}-${mm}-01`)
+          .lte("date", `${year}-${mm}-${String(getDaysInMonth(year, month)).padStart(2, "0")}`);
+        photoData = data;
+      }
 
       if (!cancelled) {
         const map = new Map<string, string>();
         photoData?.forEach((p) => map.set(p.date, p.image_url));
         setPhotoMap(map);
         setLoading(false);
+        if (pendingPopupRef.current) {
+          sessionStorage.removeItem("pendingSuccessPopup");
+          setSuccessPopupType(pendingPopupRef.current);
+          pendingPopupRef.current = null;
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [year, month]);
+  }, [year, month, calendarType, weekStartStr, weekEndStr]);
 
 
   const firstDayOffset = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
@@ -143,8 +173,8 @@ export default function HomeMonthScreen() {
         setWeekInfo({ year: sunY, month: sunM, week });
         setViewDate(new Date(sunY, sunM - 1, 1));
       } else {
-        setWeekInfo(null);
-        setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+        // 선택 날짜 없으면 현재 보고 있는 달의 1주차로 이동
+        setWeekInfo({ year, month, week: 1 });
       }
     } else {
       // 선택된 날짜의 달로 이동, 없으면 마지막 주가 속한 달
@@ -235,7 +265,19 @@ export default function HomeMonthScreen() {
         </div>
 
         {/* 배경화면 만들기 배너 — node 92:4877 */}
-        <button style={s.wallpaperBanner} onClick={() => navigate("Wallpaper", { initialType: "Week" })}>
+        <button style={s.wallpaperBanner} onClick={() => {
+          if (calendarType === "Week") {
+            navigate("Wallpaper", {
+              initialType: "Week",
+              initialWeek: { year: weekYear, month: weekMonth, week: weekNum },
+            });
+          } else {
+            navigate("Wallpaper", {
+              initialType: "Month",
+              initialMonth: { year, month },
+            });
+          }
+        }}>
           <div style={s.wallpaperListRow}>
             <div style={s.wallpaperText}>
               <p style={s.wallpaperTitle}>{pet?.name ?? "반려동물"} 배경화면 만들기</p>
@@ -275,10 +317,30 @@ export default function HomeMonthScreen() {
         }}
       />
     )}
+    {successPopupType && (
+      <SuccessPopup
+        type={successPopupType}
+        animalType={pet?.species === "고양이" ? "Cat" : "Puppy"}
+        onClose={() => setSuccessPopupType(null)}
+        onGoWallpaper={() => {
+          setSuccessPopupType(null);
+          const isMonth = successPopupType === "month";
+          const base = selectedDateStr ?? activeDateStr;
+          const [dy, dm, dd] = base.split("-").map(Number);
+          const firstDayOffset = new Date(dy, dm - 1, 1).getDay();
+          const weekNum = Math.ceil((dd + firstDayOffset) / 7);
+          navigate("Wallpaper", {
+            initialType: isMonth ? "Month" : "Week",
+            initialWeek: isMonth ? undefined : { year: dy, month: dm, week: weekNum },
+            initialMonth: isMonth ? { year: dy, month: dm } : undefined,
+          });
+        }}
+      />
+    )}
     {showToast && (
       <div style={{
         position: "fixed",
-        bottom: 104,
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)",
         left: "50%",
         transform: "translateX(-50%)",
         backgroundColor: "white",

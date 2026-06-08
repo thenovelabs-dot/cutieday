@@ -13,6 +13,40 @@ interface Props {
 const CROP_SIZE = 335;
 const OUTPUT_SIZE = 1080;
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+
+async function checkCompletion(petId: string, dateStr: string): Promise<"month" | "week" | null> {
+  const [y, m, d] = dateStr.split("-").map(Number);
+
+  // 월 완성 여부
+  const daysInM = new Date(y, m, 0).getDate();
+  const { data: monthPhotos } = await supabase
+    .from("daily_photos").select("date")
+    .eq("pet_id", petId)
+    .gte("date", `${y}-${pad(m)}-01`)
+    .lte("date", `${y}-${pad(m)}-${pad(daysInM)}`);
+  if ((monthPhotos?.length ?? 0) >= daysInM) return "month";
+
+  // 주 완성 여부 (일~토)
+  const base = new Date(`${dateStr}T00:00:00`);
+  const weekStart = new Date(base);
+  weekStart.setDate(base.getDate() - base.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const wsStr = `${weekStart.getFullYear()}-${pad(weekStart.getMonth() + 1)}-${pad(weekStart.getDate())}`;
+  const weStr = `${weekEnd.getFullYear()}-${pad(weekEnd.getMonth() + 1)}-${pad(weekEnd.getDate())}`;
+  const { data: weekPhotos } = await supabase
+    .from("daily_photos").select("date")
+    .eq("pet_id", petId)
+    .gte("date", wsStr)
+    .lte("date", weStr);
+  if ((weekPhotos?.length ?? 0) >= 7) return "week";
+
+  // void to suppress unused var warning
+  void d;
+  return null;
+}
+
 async function buildBlob(
   img: HTMLImageElement,
   imgScale: number,
@@ -191,7 +225,15 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
       );
       if (dbError) throw dbError;
 
-      sessionStorage.setItem("pendingUploadToast", "1");
+      sessionStorage.setItem("pendingUploadDate", today);
+
+      const popupType = await checkCompletion(pet.id, today);
+      if (popupType) {
+        sessionStorage.setItem("pendingSuccessPopup", popupType);
+      } else {
+        sessionStorage.setItem("pendingUploadToast", "1");
+      }
+
       onDone();
     } catch (e) {
       console.error(e);
