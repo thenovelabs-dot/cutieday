@@ -439,7 +439,7 @@ export default function DownloadingScreen() {
             </button>
           </div>
         </div>
-        <HomeBannerAd />
+        <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_DOWNLOADING_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
 
         {showToast && (
           <div style={{

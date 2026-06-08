@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { TossAds } from "@apps-in-toss/web-framework";
 
-// 실 배포 전 앱인토스 콘솔에서 발급받은 adGroupId 로 교체하세요
-const AD_GROUP_ID = (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id";
+const DEFAULT_GROUP_ID = (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id";
 
-export default function HomeBannerAd() {
+interface Props {
+  adGroupId?: string;
+}
+
+export default function HomeBannerAd({ adGroupId = DEFAULT_GROUP_ID }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -24,7 +27,7 @@ export default function HomeBannerAd() {
 
   useEffect(() => {
     if (!initialized || !containerRef.current) return;
-    const attached = TossAds.attachBanner(AD_GROUP_ID, containerRef.current, {
+    const attached = TossAds.attachBanner(adGroupId, containerRef.current, {
       theme: "light",
       tone: "grey",
       variant: "expanded",
