@@ -10,6 +10,7 @@ import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
 import HomeSuccessPopup from "../components/HomeSuccessPopup";
 import AppNav from "../components/AppNav";
+import HomeBannerAd from "../components/HomeBannerAd";
 
 interface Pet {
   id: string;
@@ -246,6 +247,7 @@ export default function HomeMonthScreen() {
         </button>
 
       </div>
+      <HomeBannerAd />
     </div>
 
     {showPicker && calendarType === "Month" && (
@@ -303,7 +305,7 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 24,
     paddingTop: 12,
-    paddingBottom: 52,
+    paddingBottom: 16,
     paddingLeft: 20,
     paddingRight: 20,
     boxSizing: "border-box",

@@ -1,0 +1,46 @@
+import { useEffect, useRef, useState } from "react";
+import { TossAds } from "@apps-in-toss/web-framework";
+
+// 실 배포 전 앱인토스 콘솔에서 발급받은 adGroupId 로 교체하세요
+const AD_GROUP_ID = (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id";
+
+export default function HomeBannerAd() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (!TossAds.initialize.isSupported()) {
+      setVisible(false);
+      return;
+    }
+    TossAds.initialize({
+      callbacks: {
+        onInitialized: () => setInitialized(true),
+        onInitializationFailed: () => setVisible(false),
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!initialized || !containerRef.current) return;
+    const attached = TossAds.attachBanner(AD_GROUP_ID, containerRef.current, {
+      theme: "light",
+      tone: "grey",
+      variant: "expanded",
+      callbacks: {
+        onNoFill: () => setVisible(false),
+        onAdFailedToRender: () => setVisible(false),
+      },
+    });
+    return () => attached.destroy();
+  }, [initialized]);
+
+  if (!visible) return null;
+
+  return (
+    <div style={{ flexShrink: 0, width: "100%", height: 96, backgroundColor: "#F2F4F6" }}>
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+    </div>
+  );
+}

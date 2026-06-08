@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { loadFullScreenAd, showFullScreenAd } from "@apps-in-toss/web-framework";
 import { useNavigation } from "../lib/navigation";
 import AppNav from "../components/AppNav";
 import { supabase } from "../lib/supabase";
@@ -13,6 +14,8 @@ type WallpaperType = "Week" | "Month";
 type WallpaperColor = "Blue" | "Black" | "Gray";
 
 const GRADIENT_TOP = "/assets/wallpaper/gradient-top.png";
+// 실 배포 전 앱인토스 콘솔에서 발급받은 adGroupId 로 교체하세요
+const AD_INTERSTITIAL_GROUP_ID = (import.meta.env.VITE_ADS_INTERSTITIAL_GROUP_ID as string | undefined) ?? "ait-ad-test-interstitial-id";
 
 
 const COLOR_OPTIONS: { key: WallpaperColor; color: "Brand" | "Black" | "Gray"; bg: string }[] = [
@@ -111,6 +114,7 @@ export default function WallpaperScreen() {
   const [monthThumbMap, setMonthThumbMap] = useState<Record<string, string>>({});
   const [petName, setPetName] = useState("");
   const [petId, setPetId] = useState<string | null>(null);
+  const [adLoading, setAdLoading] = useState(false);
 
   const screenRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -272,9 +276,38 @@ export default function WallpaperScreen() {
   }), [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, weekPhotoMap, monthPhotoMap, petName]);
 
   const handleCtaClick = useCallback(() => {
-    if (!isCtaEnabled) return;
-    navigate("Downloading", getDownloadParams());
-  }, [isCtaEnabled, navigate, getDownloadParams]);
+    if (!isCtaEnabled || adLoading) return;
+
+    const params = getDownloadParams();
+    const goToDownload = () => {
+      setAdLoading(false);
+      navigate("Downloading", params);
+    };
+
+    if (!loadFullScreenAd.isSupported()) {
+      goToDownload();
+      return;
+    }
+
+    setAdLoading(true);
+    loadFullScreenAd({
+      options: { adGroupId: AD_INTERSTITIAL_GROUP_ID },
+      onEvent: (event) => {
+        if (event.type === "loaded") {
+          showFullScreenAd({
+            options: { adGroupId: AD_INTERSTITIAL_GROUP_ID },
+            onEvent: (showEvent) => {
+              if (showEvent.type === "dismissed" || showEvent.type === "failedToShow") {
+                goToDownload();
+              }
+            },
+            onError: goToDownload,
+          });
+        }
+      },
+      onError: goToDownload,
+    });
+  }, [isCtaEnabled, adLoading, navigate, getDownloadParams]);
 
   return (
     <div ref={screenRef} style={s.screen}>
@@ -385,11 +418,15 @@ export default function WallpaperScreen() {
             </p>
           )}
           <button
-            disabled={!isCtaEnabled}
-            style={{ ...s.ctaButton, backgroundColor: isCtaEnabled ? "#508FE1" : "#D1D6DB", cursor: isCtaEnabled ? "pointer" : "default" }}
+            disabled={!isCtaEnabled || adLoading}
+            style={{
+              ...s.ctaButton,
+              backgroundColor: (isCtaEnabled && !adLoading) ? "#508FE1" : "#D1D6DB",
+              cursor: (isCtaEnabled && !adLoading) ? "pointer" : "default",
+            }}
             onClick={handleCtaClick}
           >
-            다운받기
+            {adLoading ? "광고 불러오는 중..." : "다운받기"}
           </button>
         </div>
       </div>

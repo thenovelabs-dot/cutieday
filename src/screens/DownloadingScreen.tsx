@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigation } from "../lib/navigation";
 import AppNav from "../components/AppNav";
+import HomeBannerAd from "../components/HomeBannerAd";
 import WallpaperFrame from "../components/WallpaperFrame";
 import type { WallpaperFrameStyle } from "../components/WallpaperFrame";
 import {
@@ -421,7 +422,7 @@ export default function DownloadingScreen() {
         {/* 하단 CTA — 항상 하단 고정 */}
         <div style={{ flexShrink: 0 }}>
           <div style={{ height: 36, background: "linear-gradient(to bottom, rgba(255,255,255,0), #fff)" }} />
-          <div style={{ backgroundColor: "#fff", paddingLeft: 20, paddingRight: 20, paddingBottom: 24 }}>
+          <div style={{ backgroundColor: "#fff", paddingLeft: 20, paddingRight: 20, paddingBottom: 8 }}>
             <button
               disabled={status === "generating"}
               onClick={handleBtn}
@@ -438,11 +439,12 @@ export default function DownloadingScreen() {
             </button>
           </div>
         </div>
+        <HomeBannerAd />
 
         {showToast && (
           <div style={{
             position: "absolute",
-            bottom: 104,
+            bottom: 180,
             left: "50%",
             transform: "translateX(-50%)",
             backgroundColor: "rgba(25, 31, 40, 0.88)",
