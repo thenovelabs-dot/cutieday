@@ -30,7 +30,7 @@ export default function HomeBannerAd({ adGroupId = DEFAULT_GROUP_ID }: Props) {
     const attached = TossAds.attachBanner(adGroupId, containerRef.current, {
       theme: "light",
       tone: "grey",
-      variant: "expanded",
+      variant: "card",
       callbacks: {
         onNoFill: () => setVisible(false),
         onAdFailedToRender: () => setVisible(false),

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@toss/tds-mobile";
 import { supabase } from "../lib/supabase";
 import { getUserKey } from "../lib/auth";
+import HomeBannerAd from "../components/HomeBannerAd";
 
 interface Props {
   uri: string;
@@ -249,6 +250,7 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
         <p style={s.hint}>드래그로 위치, 두 손가락으로 확대/축소할 수 있어요</p>
       </div>
 
+      <HomeBannerAd />
       <div style={s.bottom}>
         <Button
           style={{ width: "100%" }}
