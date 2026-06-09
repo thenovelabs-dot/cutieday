@@ -42,8 +42,8 @@ export default function HomeBannerAd({ adGroupId = DEFAULT_GROUP_ID }: Props) {
   if (!visible) return null;
 
   return (
-    <div style={{ flexShrink: 0, width: "100%", padding: "8px 16px", boxSizing: "border-box" }}>
-      <div ref={containerRef} style={{ width: "100%", height: 96 }} />
+    <div style={{ flexShrink: 0, margin: "8px 16px" }}>
+      <div ref={containerRef} style={{ height: 96 }} />
     </div>
   );
 }
