@@ -252,6 +252,10 @@ export default function HomeMonthScreen() {
             }}
           />
 
+          <div style={{ margin: "0 -20px" }}>
+            <HomeBannerAd />
+          </div>
+
           {/* 날짜 + 업로드 카드 — 날짜 클릭 or 기본(현재달=오늘/다른달=1일), 미래는 업로드 불가 */}
           <div style={s.uploadSection}>
             <p style={s.dateLabel}>{cardMonth}월{cardDayNum}일</p>
@@ -289,7 +293,6 @@ export default function HomeMonthScreen() {
         </button>
 
       </div>
-      <HomeBannerAd />
     </div>
 
     {showPicker && calendarType === "Month" && (
