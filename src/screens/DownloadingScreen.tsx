@@ -376,7 +376,7 @@ export default function DownloadingScreen() {
 
   return (
     <>
-      <div style={{ width: 375, height: 812, backgroundColor: "#fff", overflow: "clip", display: "flex", flexDirection: "column", userSelect: "none", position: "relative" }}>
+      <div style={{ width: "100%", height: "100%", backgroundColor: "#fff", overflow: "clip", display: "flex", flexDirection: "column", userSelect: "none", position: "relative" }}>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
         <AppNav showTitle onBack={() => navigate("HomeMonth")} />
 
