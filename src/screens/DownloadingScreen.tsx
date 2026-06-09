@@ -420,9 +420,10 @@ export default function DownloadingScreen() {
         </div>
 
         {/* 하단 CTA — 항상 하단 고정 */}
+        <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_DOWNLOADING_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
         <div style={{ flexShrink: 0 }}>
           <div style={{ height: 36, background: "linear-gradient(to bottom, rgba(255,255,255,0), #fff)" }} />
-          <div style={{ backgroundColor: "#fff", paddingLeft: 20, paddingRight: 20, paddingBottom: 8 }}>
+          <div style={{ backgroundColor: "#fff", paddingLeft: 20, paddingRight: 20, paddingBottom: 24 }}>
             <button
               disabled={status === "generating"}
               onClick={handleBtn}
@@ -439,12 +440,11 @@ export default function DownloadingScreen() {
             </button>
           </div>
         </div>
-        <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_DOWNLOADING_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
 
         {showToast && (
           <div style={{
             position: "absolute",
-            bottom: 180,
+            bottom: 104,
             left: "50%",
             transform: "translateX(-50%)",
             backgroundColor: "rgba(25, 31, 40, 0.88)",
