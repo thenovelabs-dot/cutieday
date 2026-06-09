@@ -91,7 +91,7 @@ function buildMonthPhotoMap(photos: { date: string; image_url: string }[], thumb
 
 export default function WallpaperScreen() {
   const { current, navigate } = useNavigation();
-  const params = current.params as { initialType?: WallpaperType } | undefined;
+  const params = current.params as { initialType?: WallpaperType; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number } } | undefined;
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -106,8 +106,12 @@ export default function WallpaperScreen() {
   );
   const [selectedColor, setSelectedColor] = useState<WallpaperColor>("Blue");
   const [showPicker, setShowPicker] = useState(false);
-  const [monthInfo, setMonthInfo] = useState({ year: currentYear, month: currentMonth });
-  const [weekInfo, setWeekInfo] = useState({ year: currentYear, month: currentMonth, week: currentWeekNum });
+  const [monthInfo, setMonthInfo] = useState(
+    params?.initialMonth ?? { year: currentYear, month: currentMonth }
+  );
+  const [weekInfo, setWeekInfo] = useState(
+    params?.initialWeek ?? { year: currentYear, month: currentMonth, week: currentWeekNum }
+  );
   const [weekPhotoMap, setWeekPhotoMap] = useState<Record<string, string>>({});
   const [weekThumbMap, setWeekThumbMap] = useState<Record<string, string>>({});
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
@@ -250,8 +254,15 @@ export default function WallpaperScreen() {
   }, [applyCarouselStyles]);
 
   const handleTabChange = useCallback((type: WallpaperType) => {
+    if (type === "Week") {
+      // Month → Week: 선택된 달의 1주차로 이동
+      setWeekInfo({ year: monthInfo.year, month: monthInfo.month, week: 1 });
+    } else {
+      // Week → Month: 선택된 주의 달로 이동
+      setMonthInfo({ year: weekInfo.year, month: weekInfo.month });
+    }
     setWallpaperType(type);
-  }, []);
+  }, [monthInfo, weekInfo]);
 
 
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
