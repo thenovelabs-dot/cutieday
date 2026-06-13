@@ -281,7 +281,7 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
         <p style={s.hint}>드래그로 위치, 두 손가락으로 확대/축소할 수 있어요</p>
       </div>
 
-      <HomeBannerAd />
+      <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_ADJUST_GROUP_ID as string | undefined) ?? (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
       <div style={s.bottom}>
         <Button
           style={{ width: "100%" }}
