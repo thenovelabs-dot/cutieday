@@ -55,7 +55,7 @@ export default function HomeMonthScreen() {
     }
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-  const [calendarType, setCalendarType] = useState<"Month" | "Week">("Month");
+  const [calendarType, setCalendarType] = useState<"Month" | "Week">("Week");
   const [pet, setPet] = useState<Pet | null>(null);
   const [photoMap, setPhotoMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -194,18 +194,43 @@ export default function HomeMonthScreen() {
     <div style={s.container}>
       <AppNav showTitle showBell />
       <div style={s.scroll}>
+        <div style={{ margin: "0 -20px" }}>
+          <HomeBannerAd flat />
+        </div>
 
         {/* 반려동물 프로필 카드 — node 92:4794 */}
         <button style={s.petCard} onClick={() => navigate("PetEdit")}>
-          <AnimalProfile type={pet?.species === "고양이" ? "Cat" : "Puppy"} />
+          <AnimalProfile type={pet?.species === "고양이" ? "Cat" : "Puppy"} size={28} />
           <div style={s.petListRow}>
-            <div style={s.petInfo}>
-              <p style={s.petSubLabel}>오늘도 귀여운</p>
-              <p style={s.petName}>{pet?.name ?? "반려동물"} ❤️</p>
+            <p style={s.petName}>{pet?.name ?? "반려동물"}</p>
+            <div style={s.editBadge}>
+              <span style={s.editBadgeText}>정보 수정</span>
             </div>
-            <ArrowRight />
           </div>
         </button>
+
+        {/* 업로드 카드 — 정보수정 카드 바로 아래 */}
+        <HomeUploadCard
+          type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
+          petName={pet?.name ?? "반려동물"}
+          date={activeDateStr}
+          imageUrl={photoMap.get(activeDateStr)}
+          onUpload={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
+          onChangePhoto={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            e.target.value = "";
+            navigate("ImageAdjust", { uri: URL.createObjectURL(file), date: pendingDateRef.current });
+          }}
+        />
 
         {/* 달력 블록 — node 92:4797 */}
         <div style={s.calendarBlock}>
@@ -225,7 +250,7 @@ export default function HomeMonthScreen() {
                   </svg>
                 </div>
               </button>
-              <SegmentText value={calendarType} onChange={handleCalendarTypeChange} />
+              <SegmentText value={calendarType} onChange={handleCalendarTypeChange} options={["Month", "Week"]} />
             </div>
 
             {loading ? (
@@ -238,60 +263,26 @@ export default function HomeMonthScreen() {
               <Calendar type={calendarType} year={year} month={month} today={today} photoMap={photoMap} onDayPress={setSelectedDateStr} selectedDateStr={activeDateStr} />
             )}
           </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              e.target.value = "";
-              navigate("ImageAdjust", { uri: URL.createObjectURL(file), date: pendingDateRef.current });
-            }}
-          />
-
-          <div style={{ margin: "0 -20px" }}>
-            <HomeBannerAd />
-          </div>
-
-          {/* 날짜 + 업로드 카드 — 날짜 클릭 or 기본(현재달=오늘/다른달=1일), 미래는 업로드 불가 */}
-          <div style={s.uploadSection}>
-            <p style={s.dateLabel}>{cardMonth}월{cardDayNum}일</p>
-            <HomeUploadCard
-              type={isFuture ? "Future" : (photoMap.get(activeDateStr) ? "Upload" : "None")}
-              petName={pet?.name ?? "반려동물"}
-              imageUrl={photoMap.get(activeDateStr)}
-              onUpload={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
-              onChangePhoto={() => { pendingDateRef.current = activeDateStr; fileInputRef.current?.click(); }}
-            />
-          </div>
         </div>
 
-        {/* 배경화면 만들기 배너 — node 92:4877 */}
-        <button style={s.wallpaperBanner} onClick={() => {
-          if (calendarType === "Week") {
-            navigate("Wallpaper", {
-              initialType: "Week",
-              initialWeek: { year: weekYear, month: weekMonth, week: weekNum },
-            });
-          } else {
-            navigate("Wallpaper", {
-              initialType: "Month",
-              initialMonth: { year, month },
-            });
-          }
-        }}>
-          <div style={s.wallpaperListRow}>
-            <div style={s.wallpaperText}>
-              <p style={s.wallpaperTitle}>{pet?.name ?? "반려동물"} 배경화면 만들기</p>
-              <p style={s.wallpaperSubtitle}>업로드한 사진으로 배경화면을 만들어보세요.</p>
-            </div>
-            <ArrowRight />
-          </div>
-        </button>
 
+      </div>
+
+      {/* 배경화면 만들기 버튼 — 하단 고정 오버레이 */}
+      <div style={s.wallpaperSection}>
+        <button style={s.wallpaperBtn} onClick={() => {
+          const [dy, dm, dd] = activeDateStr.split("-").map(Number);
+          navigate("Wallpaper", {
+            initialType: "Day",
+            initialDay: { year: dy, month: dm, day: dd },
+          });
+        }}>
+          <svg width="18" height="18" viewBox="0 0 15.735 15.165" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M7.2825 10.29C7.44 10.4475 7.6575 10.53 7.8675 10.53C8.0775 10.53 8.2875 10.4475 8.4525 10.29L12.375 6.36C12.6975 6.0375 12.6975 5.5125 12.375 5.19C12.0525 4.8675 11.5275 4.8675 11.205 5.19L8.6925 7.7025V0.825C8.6925 0.3675 8.325 0 7.8675 0C7.41 0 7.0425 0.3675 7.0425 0.825V7.71L4.5225 5.1975C4.2 4.875 3.675 4.875 3.3525 5.1975C3.03 5.52 3.03 6.045 3.3525 6.3675L7.2825 10.29Z" fill="white" />
+            <path d="M14.91 8.5575C14.4525 8.5575 14.085 8.925 14.085 9.3825V12.54C14.085 13.08 13.65 13.515 13.11 13.515H2.625C2.085 13.515 1.65 13.08 1.65 12.54V9.3825C1.65 8.925 1.2825 8.5575 0.825 8.5575C0.3675 8.5575 0 8.925 0 9.3825V12.54C0 13.9875 1.1775 15.165 2.625 15.165H13.11C14.5575 15.165 15.735 13.9875 15.735 12.54V9.3825C15.735 8.925 15.3675 8.5575 14.91 8.5575Z" fill="white" />
+          </svg>
+          <span style={s.wallpaperBtnText}>배경화면 만들기</span>
+        </button>
       </div>
     </div>
 
@@ -381,6 +372,7 @@ export default function HomeMonthScreen() {
 
 const s: Record<string, React.CSSProperties> = {
   container: {
+    position: "relative",
     display: "flex",
     flexDirection: "column",
     height: "100%",
@@ -394,7 +386,7 @@ const s: Record<string, React.CSSProperties> = {
     WebkitOverflowScrolling: "touch" as React.CSSProperties["WebkitOverflowScrolling"],
     display: "flex",
     flexDirection: "column",
-    gap: 24,
+    gap: 16,
     paddingTop: 12,
     paddingBottom: 16,
     paddingLeft: 20,
@@ -406,11 +398,11 @@ const s: Record<string, React.CSSProperties> = {
   petCard: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
     width: "100%",
-    padding: "10px 20px",
+    padding: "12px 16px",
     backgroundColor: "#F2F4F6",
-    borderRadius: 20,
+    borderRadius: 16,
     border: "none",
     cursor: "pointer",
     boxSizing: "border-box",
@@ -418,35 +410,41 @@ const s: Record<string, React.CSSProperties> = {
     outline: "none",
     WebkitTapHighlightColor: "transparent",
   },
-  // node 92:4796 — ListRow: flex 1, min-h 44, py 8
   petListRow: {
     flex: 1,
     display: "flex",
     alignItems: "center",
-    minHeight: 44,
-    paddingTop: 8,
-    paddingBottom: 8,
     minWidth: 0,
-  },
-  petInfo: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    minWidth: 0,
-  },
-  petSubLabel: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 400,
-    lineHeight: 1.35,
-    color: "rgba(0,19,43,0.58)",
   },
   petName: {
+    flex: 1,
     margin: 0,
     fontSize: 17,
     fontWeight: 700,
     lineHeight: 1.35,
     color: "rgba(0,12,30,0.8)",
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  editBadge: {
+    backgroundColor: "rgba(0,27,55,0.1)",
+    borderRadius: 9,
+    padding: "3px 7px",
+    flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    alignSelf: "center",
+  },
+  editBadgeText: {
+    fontSize: 10,
+    fontWeight: 590,
+    lineHeight: 1.5,
+    color: "rgba(3,18,40,0.7)",
+    whiteSpace: "nowrap",
   },
   arrowContainer: {
     width: 24,
@@ -462,6 +460,7 @@ const s: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     gap: 24,
+    marginBottom: 72,
   },
 
   // node 92:4798 — flex-col, gap 16
@@ -522,67 +521,44 @@ const s: Record<string, React.CSSProperties> = {
     backgroundColor: "#F2F4F6",
   },
 
-  uploadSection: {
+  wallpaperSection: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, white 66.346%)",
+    padding: "8px 20px 20px",
     display: "flex",
     flexDirection: "column",
-    gap: 12,
+    alignItems: "center",
+    pointerEvents: "none",
   },
-  // node 92:4870 — SF Pro Bold 17 / 135% / #191F28
-  dateLabel: {
-    margin: 0,
-    fontSize: 17,
-    fontWeight: 700,
-    lineHeight: "135%",
-    color: "#191F28",
-    whiteSpace: "nowrap",
-  },
-
-  // node 92:4877 — bg grey-100, px 20, py 10, rounded 20
-  wallpaperBanner: {
+  wallpaperBtn: {
     display: "flex",
-    width: "100%",
-    padding: "10px 20px",
-    marginBottom: 40,
-    backgroundColor: "#F2F4F6",
-    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 48,
+    minWidth: 80,
+    paddingLeft: 16,
+    paddingRight: 20,
+    paddingTop: 2,
+    paddingBottom: 2,
+    backgroundColor: "#508FE1",
+    borderRadius: 999,
     border: "none",
     cursor: "pointer",
-    boxSizing: "border-box",
-    textAlign: "left",
+    overflow: "hidden",
+    pointerEvents: "auto",
     outline: "none",
     WebkitTapHighlightColor: "transparent",
   },
-  // node 92:4878 — ListRow: flex 1, min-h 44, py 8
-  wallpaperListRow: {
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    minHeight: 44,
-    paddingTop: 8,
-    paddingBottom: 8,
-    minWidth: 0,
-  },
-  wallpaperText: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    minWidth: 0,
-  },
-  // SF Pro Bold 17 / 135% / rgba(0,12,30,0.8)
-  wallpaperTitle: {
-    margin: 0,
-    fontSize: 17,
-    fontWeight: 700,
-    lineHeight: "135%",
-    color: "rgba(0,12,30,0.8)",
-  },
-  // SF Pro Regular 13 / 135% / rgba(0,19,43,0.58)
-  wallpaperSubtitle: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 400,
-    lineHeight: "135%",
-    color: "rgba(0,19,43,0.58)",
+  wallpaperBtnText: {
+    fontSize: 15,
+    fontWeight: 590,
+    lineHeight: 1.252,
+    color: "white",
+    whiteSpace: "nowrap",
   },
 };
 

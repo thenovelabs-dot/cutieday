@@ -281,7 +281,9 @@ export default function ImageAdjustScreen({ uri, date, onBack, onDone }: Props) 
         <p style={s.hint}>드래그로 위치, 두 손가락으로 확대/축소할 수 있어요</p>
       </div>
 
-      <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_ADJUST_GROUP_ID as string | undefined) ?? (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
+      <div style={{ margin: "0 20px 32px", borderRadius: 16, overflow: "hidden", flexShrink: 0, maxHeight: 72, display: "flex", alignItems: "center" }}>
+        <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_ADJUST_GROUP_ID as string | undefined) ?? (import.meta.env.VITE_ADS_BANNER_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
+      </div>
       <div style={s.bottom}>
         <Button
           style={{ width: "100%" }}
@@ -354,7 +356,7 @@ const s: Record<string, React.CSSProperties> = {
     lineHeight: "19px",
   },
   bottom: {
-    padding: "12px 20px 20px",
+    padding: "0 20px 20px",
     flexShrink: 0,
   },
 };

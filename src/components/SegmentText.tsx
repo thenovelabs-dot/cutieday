@@ -1,24 +1,36 @@
 import React from "react";
 
+type SegmentValue = "Month" | "Week" | "Day";
+
 interface Props {
-  value: "Month" | "Week";
-  onChange: (value: "Month" | "Week") => void;
+  value: SegmentValue;
+  onChange: (value: SegmentValue) => void;
+  options?: SegmentValue[];
 }
 
-export default function SegmentText({ value, onChange }: Props) {
+const ALL_OPTIONS: { key: SegmentValue; label: string }[] = [
+  { key: "Month", label: "월별" },
+  { key: "Week",  label: "주별" },
+  { key: "Day",   label: "일별" },
+];
+
+export default function SegmentText({ value, onChange, options }: Props) {
+  const visibleOptions = options
+    ? ALL_OPTIONS.filter((o) => options.includes(o.key))
+    : ALL_OPTIONS;
   return (
     <div style={s.container}>
-      {(["Month", "Week"] as const).map((option) => {
-        const active = value === option;
+      {visibleOptions.map(({ key, label }) => {
+        const active = value === key;
         return (
           <button
-            key={option}
+            key={key}
             style={{ ...s.item, ...(active ? s.itemActive : {}) }}
-            onClick={() => onChange(option)}
+            onClick={() => onChange(key)}
             onMouseDown={(e) => e.preventDefault()}
           >
             <span style={{ ...s.label, ...(active ? s.labelActive : {}) }}>
-              {option === "Month" ? "월별" : "주별"}
+              {label}
             </span>
           </button>
         );

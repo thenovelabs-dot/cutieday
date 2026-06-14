@@ -3,151 +3,203 @@ import React from "react";
 interface Props {
   type: "None" | "Upload" | "Future";
   petName: string;
+  date: string; // "YYYY-MM-DD"
   imageUrl?: string;
   onUpload: () => void;
   onChangePhoto: () => void;
 }
 
-export default function HomeUploadCard({ type, petName, imageUrl, onUpload, onChangePhoto }: Props) {
+function formatDateLabel(dateStr: string): string {
+  const [, m, d] = dateStr.split("-");
+  return `${Number(m)}월 ${Number(d)}일`;
+}
+
+export default function HomeUploadCard({ type, petName, date, imageUrl, onUpload, onChangePhoto }: Props) {
+  const dateLabel = formatDateLabel(date);
+
   if (type === "Future") {
     return (
-      <div style={{ ...s.noneContainer, minHeight: 147 }}>
-        <p style={s.noneText}>미리 업로드할 수 없어요.</p>
+      <div style={s.container}>
+        <div style={s.textGroup}>
+          <p style={s.dateText}>{dateLabel}</p>
+          <p style={s.mainText}>미리 업로드할 수 없어요.</p>
+        </div>
       </div>
     );
   }
 
   if (type === "None") {
     return (
-      <div style={s.noneContainer}>
-        <p style={s.noneText}>아직 오늘의 {petName}가 없어요.</p>
-        <button style={s.btn} onClick={onUpload}>
+      <div style={s.container}>
+        <div style={s.textGroup}>
+          <p style={s.dateText}>{dateLabel}</p>
+          <p style={s.mainText}>{`오늘의 ${petName}가\n없어요.`}</p>
+        </div>
+        <button style={s.uploadBtn} onClick={onUpload}>
           <span style={s.btnText}>업로드하기</span>
         </button>
       </div>
     );
   }
 
+  // Upload 상태
   return (
     <div style={s.uploadContainer}>
-      {imageUrl && (
-        <div style={s.thumbnailWrapper}>
-          <img src={imageUrl} alt="오늘의 사진" style={s.thumbnail} />
+      <div style={s.imageBg} />
+      {imageUrl && <img src={imageUrl} alt="오늘의 사진" style={s.image} />}
+      <div style={s.overlay}>
+        <div style={s.dateBadge}>
+          <span style={s.dateBadgeText}>{dateLabel}</span>
         </div>
-      )}
-      <div style={s.content}>
-        <div style={s.textBlock}>
-          <p style={s.subLabel}>오늘의</p>
-          <p style={s.petName}>{petName} ❤️</p>
+        <div style={s.changeRow}>
+          <button style={s.changeBtn} onClick={onChangePhoto}>
+            <span style={s.btnText}>변경하기</span>
+          </button>
         </div>
-        <button style={{ ...s.btn, width: "100%" }} onClick={onChangePhoto}>
-          <span style={s.btnText}>변경하기</span>
-        </button>
       </div>
     </div>
   );
 }
 
 const s: Record<string, React.CSSProperties> = {
-  // None 상태 — node 12:6456
-  noneContainer: {
+  // None / Future 공통 컨테이너
+  container: {
     width: "100%",
+    height: 280,
+    flexShrink: 0,
     backgroundColor: "#F2F4F6",
-    borderRadius: 20,
+    borderRadius: 16,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    padding: "40px 20px",
+    padding: "14px 16px",
     boxSizing: "border-box",
   },
-  noneText: {
-    margin: 0,
-    fontSize: 15,
-    fontWeight: 700,
-    lineHeight: 1.252,
-    color: "#8B95A1",
-    textAlign: "center",
+  textGroup: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
     width: "100%",
   },
+  dateText: {
+    margin: 0,
+    fontSize: 15,
+    fontWeight: 590,
+    lineHeight: 1.252,
+    color: "rgba(0,19,43,0.58)",
+    textAlign: "center",
+  },
+  mainText: {
+    margin: 0,
+    fontSize: 20,
+    fontWeight: 700,
+    lineHeight: 1.35,
+    color: "rgba(0,12,30,0.8)",
+    textAlign: "center",
+    whiteSpace: "pre-line",
+  },
 
-  // 버튼 — node 12:6453 / 12:6470
-  btn: {
+  // 버튼 공통
+  uploadBtn: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    minHeight: 32,
-    minWidth: 52,
-    padding: "2px 10px",
+    minHeight: 38,
+    minWidth: 64,
+    padding: "2px 16px",
     backgroundColor: "#508FE1",
-    borderRadius: 8,
+    borderRadius: 10,
     border: "none",
     cursor: "pointer",
     overflow: "hidden",
     boxSizing: "border-box",
+    outline: "none",
+    WebkitTapHighlightColor: "transparent",
   },
   btnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: 590,
     lineHeight: 1.252,
     color: "white",
     textAlign: "center",
+    whiteSpace: "nowrap",
   },
 
-  // Upload 상태 — node 12:6464
+  // Upload 상태
   uploadContainer: {
     width: "100%",
-    backgroundColor: "#F2F4F6",
-    borderRadius: 20,
-    display: "flex",
-    alignItems: "stretch",
-    gap: 20,
-    boxSizing: "border-box",
-    overflow: "hidden",
-  },
-  thumbnailWrapper: {
-    width: 119,
-    alignSelf: "stretch",
+    height: 280,
     flexShrink: 0,
+    borderRadius: 16,
+    position: "relative",
     overflow: "hidden",
-    borderRadius: 20,
+    boxSizing: "border-box",
   },
-  thumbnail: {
+  imageBg: {
+    position: "absolute",
+    inset: 0,
+    backgroundColor: "#F2F4F6",
+    borderRadius: 16,
+  },
+  image: {
+    position: "absolute",
+    inset: 0,
     width: "100%",
     height: "100%",
     objectFit: "cover",
     display: "block",
+    borderRadius: 16,
   },
-  content: {
-    flex: 1,
-    minWidth: 0,
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    padding: "14px 16px",
+    boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-end",
-    gap: 16,
-    paddingRight: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
-  textBlock: {
+  dateBadge: {
+    backgroundColor: "rgba(0,29,58,0.18)",
+    borderRadius: 11,
+    padding: "3px 7px",
     display: "flex",
-    flexDirection: "column",
-    gap: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  subLabel: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 510,
-    lineHeight: 1.252,
-    color: "#4E5968",
-  },
-  petName: {
-    margin: 0,
-    fontSize: 15,
+  dateBadgeText: {
+    fontSize: 12,
     fontWeight: 700,
-    lineHeight: 1.252,
-    color: "#333D4B",
+    lineHeight: "18px",
+    color: "white",
+    whiteSpace: "nowrap",
+  },
+  changeRow: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+  changeBtn: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    minHeight: 38,
+    minWidth: 64,
+    padding: "2px 16px",
+    backgroundColor: "#4E5968",
+    borderRadius: 10,
+    border: "none",
+    cursor: "pointer",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    outline: "none",
+    WebkitTapHighlightColor: "transparent",
   },
 };

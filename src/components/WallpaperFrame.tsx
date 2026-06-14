@@ -22,13 +22,14 @@ export const WALLPAPER_STYLES: WallpaperFrameStyle[] = [
 ];
 
 export interface WallpaperFrameProps {
-  type: "week" | "month";
+  type: "week" | "month" | "day";
   frameStyle?: WallpaperFrameStyle;
   previewContainer?: boolean;
   photoMap?: Record<string, string>;
   year: number;
   month: number;
   week?: number;
+  day?: number;
   petName?: string;
   previewDate?: Date;
   bgColor?: string;
@@ -82,6 +83,30 @@ export const POLAROID_MONTH_Y = [356,417,478,539,600];
 
 // Postcard Week Mon cell rotation (Figma rotation=-0.290129 rad = -16.623°)
 export const POSTCARD_MON_ROT = -16.623;
+
+// ── Day 전용: 단일 포토 셀 좌표 ──────────────────────────────
+export const DAY_CELL: Record<WallpaperFrameStyle, CellRect> = {
+  Default:  { x:40,  y:343, w:295, h:319 },
+  Postcard: { x:74,  y:286, w:183, h:241 },
+  Polaroid: { x:58,  y:302, w:258, h:301 },
+  Apple:    { x:60,  y:299, w:256, h:342 },
+  Note:     { x:30,  y:356, w:315, h:296 },
+  Spark:    { x:92,  y:375, w:191, h:242 },
+  Star:     { x:46,  y:329, w:283, h:283 },
+};
+export const DAY_POSTCARD_ROT = -15.32;
+
+// ── Day 전용 배경 레이어 ──────────────────────────────────────
+export function bgLayersDay(style: WallpaperFrameStyle, bgColor: string): SvgLayer[] {
+  const dark = bgColor === "#000000" || bgColor === "#232323";
+  if (style === "Postcard") return [{ src: BASE+"postcardDay.png",  x:23,   y:245,  w:321,  h:451  }];
+  if (style === "Polaroid") return [{ src: BASE+"polaroidDay.png",  x:48,   y:283,  w:279,  h:388  }];
+  if (style === "Apple")    return [{ src: BASE+(dark ? "appleDay-black.png" : "appleDay-blue.png"), x:-345, y:-54, w:1065, h:921 }];
+  if (style === "Note")     return [{ src: BASE+(dark ? "noteDay-black.png"  : "noteDay-blue.png"),  x:-216, y:-289, w:848, h:1391 }];
+  if (style === "Spark")    return [{ src: BASE+"sparkDay.png",     x:-119, y:-79,  w:613,  h:970  }];
+  if (style === "Star")     return [{ src: BASE+"starDay.png",      x:0,    y:0,    w:375,  h:812  }];
+  return [];
+}
 
 // ── 배경 레이어 (포토 셀 뒤쪽) ────────────────────────────────
 export function bgLayers(style: WallpaperFrameStyle, isWeek: boolean, bgColor: string, daysInMonth = 31): SvgLayer[] {
@@ -215,10 +240,73 @@ function DayBadge({ label, right, bottom }: { label: string; right: number; bott
   );
 }
 
+// ── Day 자막 렌더링 ────────────────────────────────────────────
+function renderSubtitleDay(
+  frameStyle: WallpaperFrameStyle,
+  year: number,
+  month: number,
+  day: number,
+  petName: string,
+  bgColor: string,
+): React.ReactNode {
+  if (["Apple", "Note", "Spark", "Star"].includes(frameStyle)) return null;
+
+  if (frameStyle === "Default") {
+    const text = `${year}년 ${month}월 ${day}일 ${petName}. 오늘도 귀여웠어`;
+    return (
+      <div style={{ position: "absolute", left: 40, top: 316, width: 295, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, pointerEvents: "none" }}>
+        <span style={{ ...TEXT_BASE, fontSize: 17 }}>{text}</span>
+        <img src={ANIMAL_ICON} alt="" style={{ width: 15, height: 15, flexShrink: 0 }} />
+      </div>
+    );
+  }
+
+  if (frameStyle === "Polaroid") {
+    const dark = bgColor === "#000000" || bgColor === "#232323";
+    const POLAROID_TEXT = dark ? "#000000" : "#5e96df";
+    return (
+      <div style={{ position: "absolute", left: 58.31, top: 615.03, width: 257.802, display: "flex", flexDirection: "column", alignItems: "flex-start", pointerEvents: "none" }}>
+        <p style={{ margin: 0, fontFamily: "'Dongle', sans-serif", fontWeight: 400, fontSize: 19.763, lineHeight: "normal", color: POLAROID_TEXT, textAlign: "center", width: "100%" }}>
+          {year}년 {month}월 {day}일 {petName}.
+        </p>
+        <div style={{ display: "flex", gap: 5.729, alignItems: "center", justifyContent: "center", width: "100%" }}>
+          <span style={{ fontFamily: "'Dongle', sans-serif", fontWeight: 400, fontSize: 14.895, lineHeight: "normal", color: POLAROID_TEXT, whiteSpace: "nowrap" }}>오늘도 귀여웠어</span>
+          <img src={ANIMAL_ICON} alt="" style={{ width: 16.041, height: 16.041, flexShrink: 0 }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (frameStyle === "Postcard") {
+    return (
+      <div style={{
+        position: "absolute", left: 185, top: 531, width: 121, height: 136,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        pointerEvents: "none",
+      }}>
+        <div style={{
+          display: "flex", flexDirection: "column", gap: 8.78, alignItems: "flex-start",
+          transform: "rotate(13.22deg)", flexShrink: 0,
+        }}>
+          <img src={ANIMAL_ICON} alt="" style={{ width: 30.544, height: 30.544 }} />
+          <div>
+            <div style={{ ...TEXT_BASE, fontSize: 19.286, lineHeight: "19.286px" }}>{year}년</div>
+            <div style={{ ...TEXT_BASE, fontSize: 19.286, lineHeight: "19.286px" }}>{month}월 {day}일</div>
+            <div style={{ ...TEXT_BASE, fontSize: 19.286, lineHeight: "19.286px" }}>{petName}</div>
+            <div style={{ ...TEXT_BASE, fontSize: 19.286, lineHeight: "19.286px" }}>오늘도 귀여웠어</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 // ── WallpaperFrame ────────────────────────────────────────────
 function WallpaperFrame({
   type, frameStyle = "Default", previewContainer = true,
-  photoMap, year, month, week, petName = "", bgColor = DEFAULT_BG,
+  photoMap, year, month, week, day, petName = "", bgColor = DEFAULT_BG,
 }: WallpaperFrameProps) {
   const isWeek = type === "week";
   const showBadge = false;
@@ -233,12 +321,33 @@ function WallpaperFrame({
     }}>
 
       {/* 1. 배경 PNG (포토 셀 뒤) */}
-      {bgLayers(frameStyle, isWeek, effectiveBg, new Date(year, month, 0).getDate()).map((l, i) => (
+      {(type === "day"
+        ? bgLayersDay(frameStyle, effectiveBg)
+        : bgLayers(frameStyle, isWeek, effectiveBg, new Date(year, month, 0).getDate())
+      ).map((l, i) => (
         <img key={i} src={l.src} alt="" style={{ position:"absolute", left:l.x, top:l.y, width:l.w, height:l.h, display:"block", pointerEvents:"none" }} />
       ))}
 
       {/* 2. 포토 셀 */}
-      {isWeek
+      {type === "day"
+        ? (() => {
+            const c = DAY_CELL[frameStyle];
+            const src = photoMap?.["photo"];
+            const cellRot = frameStyle === "Postcard" ? DAY_POSTCARD_ROT : 0;
+            return (
+              <div style={{
+                position:"absolute", left:c.x, top:c.y, width:c.w, height:c.h,
+                borderRadius: frameStyle === "Apple" ? 38 : frameStyle === "Note" ? 36 : frameStyle === "Spark" ? 9999 : frameStyle === "Star" ? 12 : (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8,
+                backgroundColor: (frameStyle === "Postcard" || frameStyle === "Polaroid") ? "transparent" : (src ? effectiveBg : "#ffffff"),
+                overflow:"hidden",
+                transform: cellRot ? `rotate(${cellRot}deg)` : undefined,
+                transformOrigin: "center",
+              }}>
+                {src && <img src={src} alt="" crossOrigin="anonymous" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />}
+              </div>
+            );
+          })()
+        : isWeek
         ? WEEK_DAYS.map(({ key, label }) => {
             const c = WEEK_CELLS[frameStyle][key];
             const src = photoMap?.[key];
@@ -327,12 +436,15 @@ function WallpaperFrame({
       }
 
       {/* 3. 오버레이 SVG (포토 셀 앞) */}
-      {overlayLayers(frameStyle, isWeek).map((l, i) => (
+      {type !== "day" && overlayLayers(frameStyle, isWeek).map((l, i) => (
         <img key={i} src={l.src} alt="" style={{ position:"absolute", left:l.x, top:l.y, width:l.w, height:l.h, display:"block", pointerEvents:"none" }} />
       ))}
 
       {/* 4. 자막 텍스트 */}
-      {renderSubtitle(frameStyle, isWeek, year, month, week, petName)}
+      {type === "day"
+        ? renderSubtitleDay(frameStyle, year, month, day ?? 1, petName, effectiveBg)
+        : renderSubtitle(frameStyle, isWeek, year, month, week, petName)
+      }
 
       {/* 5. PreviewContainer (최상단) */}
       {previewContainer && (

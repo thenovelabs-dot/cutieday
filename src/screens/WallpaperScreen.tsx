@@ -9,8 +9,10 @@ import WallpaperFrame, { WALLPAPER_STYLES, bgLayers, overlayLayers } from "../co
 import ColorSelectUnit from "../components/ColorSelectUnit";
 import CalendarMonthPicker from "../components/CalendarMonthPicker";
 import CalendarWeekPicker from "../components/CalendarWeekPicker";
+import CalendarDayPicker from "../components/CalendarDayPicker";
+import { bgLayersDay } from "../components/WallpaperFrame";
 
-type WallpaperType = "Week" | "Month";
+type WallpaperType = "Week" | "Month" | "Day";
 type WallpaperColor = "Blue" | "Black" | "Gray";
 
 const GRADIENT_TOP = "/assets/wallpaper/gradient-top.png";
@@ -35,26 +37,40 @@ function weeksInMonth(year: number, month: number): number {
   return Math.ceil((daysInMonth + firstDayOffset) / 7);
 }
 
+function getWeekNumOfDay(year: number, month: number, day: number): number {
+  const firstDayOffset = new Date(year, month - 1, 1).getDay();
+  return Math.ceil((day + firstDayOffset) / 7);
+}
+
 function dateLabelParts(
   type: WallpaperType,
   monthInfo: { year: number; month: number },
   weekInfo: { year: number; month: number; week: number },
+  dayInfo: { year: number; month: number; day: number },
   currentYear: number,
 ): { main: string; sub?: string } {
   if (type === "Month") {
     const prefix = monthInfo.year !== currentYear ? `${monthInfo.year}년 ` : "";
     return { main: `${prefix}${monthInfo.month}월` };
   }
+  if (type === "Day") {
+    const prefix = dayInfo.year !== currentYear ? `${dayInfo.year}년 ` : "";
+    return { main: `${prefix}${dayInfo.month}월 ${dayInfo.day}일` };
+  }
   const prefix = weekInfo.year !== currentYear ? `${weekInfo.year}년 ` : "";
   return { main: `${prefix}${weekInfo.month}월`, sub: `${weekInfo.week}주차` };
 }
 
-function toThumbUrl(url: string): string {
+function toThumbUrl(url: string, square = false, size = 200): string {
   try {
     const u = new URL(url);
     u.pathname = u.pathname.replace("/object/public/", "/render/image/public/");
-    u.searchParams.set("width", "200");
-    u.searchParams.set("quality", "60");
+    u.searchParams.set("width", String(size));
+    u.searchParams.set("quality", square ? "80" : "60");
+    if (square) {
+      u.searchParams.set("height", String(size));
+      u.searchParams.set("resize", "cover");
+    }
     return u.toString();
   } catch {
     return url;
@@ -91,7 +107,7 @@ function buildMonthPhotoMap(photos: { date: string; image_url: string }[], thumb
 
 export default function WallpaperScreen() {
   const { current, navigate } = useNavigation();
-  const params = current.params as { initialType?: WallpaperType; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number } } | undefined;
+  const params = current.params as { initialType?: "Week" | "Month" | "Day"; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number }; initialDay?: { year: number; month: number; day: number } } | undefined;
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -116,6 +132,11 @@ export default function WallpaperScreen() {
   const [weekThumbMap, setWeekThumbMap] = useState<Record<string, string>>({});
   const [monthPhotoMap, setMonthPhotoMap] = useState<Record<string, string>>({});
   const [monthThumbMap, setMonthThumbMap] = useState<Record<string, string>>({});
+  const [dayInfo, setDayInfo] = useState(
+    params?.initialDay ?? { year: today.getFullYear(), month: today.getMonth() + 1, day: today.getDate() }
+  );
+  const [dayPhotoMap, setDayPhotoMap] = useState<Record<string, string>>({});
+  const [daySelected, setDaySelected] = useState(!!params?.initialDay);
   const [petName, setPetName] = useState("");
   const [petId, setPetId] = useState<string | null>(null);
   const [adLoading, setAdLoading] = useState(false);
@@ -156,11 +177,15 @@ export default function WallpaperScreen() {
 
   // 프레임 PNG 이미지 프리로드
   useEffect(() => {
-    const isWeek = wallpaperType === "Week";
     const srcs = new Set<string>();
     WALLPAPER_STYLES.forEach((style) => {
-      [...bgLayers(style, isWeek, "#508FE1"), ...bgLayers(style, isWeek, "#000000"),
-       ...overlayLayers(style, isWeek)].forEach((l) => srcs.add(l.src));
+      if (wallpaperType === "Day") {
+        [...bgLayersDay(style, "#508FE1"), ...bgLayersDay(style, "#000000")].forEach((l) => srcs.add(l.src));
+      } else {
+        const isWeek = wallpaperType === "Week";
+        [...bgLayers(style, isWeek, "#508FE1"), ...bgLayers(style, isWeek, "#000000"),
+         ...overlayLayers(style, isWeek)].forEach((l) => srcs.add(l.src));
+      }
     });
     srcs.forEach((src) => { const img = new Image(); img.src = src; });
   }, [wallpaperType]);
@@ -211,6 +236,21 @@ export default function WallpaperScreen() {
     })();
   }, [monthInfo, petId]);
 
+  useEffect(() => {
+    if (!petId || !daySelected) return;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dateStr = `${dayInfo.year}-${pad(dayInfo.month)}-${pad(dayInfo.day)}`;
+    (async () => {
+      const { data } = await supabase
+        .from("daily_photos")
+        .select("image_url")
+        .eq("pet_id", petId)
+        .eq("date", dateStr)
+        .maybeSingle();
+      setDayPhotoMap(data ? { photo: toThumbUrl(data.image_url, true, 600) } : {});
+    })();
+  }, [dayInfo, petId, daySelected]);
+
   const dimsRef = useRef(dims);
   dimsRef.current = dims;
 
@@ -255,36 +295,67 @@ export default function WallpaperScreen() {
 
   const handleTabChange = useCallback((type: WallpaperType) => {
     if (type === "Week") {
-      // Month → Week: 선택된 달의 1주차로 이동
-      setWeekInfo({ year: monthInfo.year, month: monthInfo.month, week: 1 });
-    } else {
-      // Week → Month: 선택된 주의 달로 이동
-      setMonthInfo({ year: weekInfo.year, month: weekInfo.month });
+      if (wallpaperType === "Day" && daySelected) {
+        setWeekInfo({ year: dayInfo.year, month: dayInfo.month, week: getWeekNumOfDay(dayInfo.year, dayInfo.month, dayInfo.day) });
+      } else {
+        setWeekInfo({ year: monthInfo.year, month: monthInfo.month, week: 1 });
+      }
+    } else if (type === "Month") {
+      if (wallpaperType === "Day" && daySelected) {
+        setMonthInfo({ year: dayInfo.year, month: dayInfo.month });
+      } else {
+        setMonthInfo({ year: weekInfo.year, month: weekInfo.month });
+      }
+    } else if (type === "Day") {
+      setDaySelected(false);
     }
     setWallpaperType(type);
-  }, [monthInfo, weekInfo]);
+  }, [wallpaperType, daySelected, dayInfo, monthInfo, weekInfo]);
 
 
   const activeColorBg = COLOR_OPTIONS.find((c) => c.key === selectedColor)?.bg ?? "#508FE1";
-  const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, currentYear);
+  const labelParts = dateLabelParts(wallpaperType, monthInfo, weekInfo, dayInfo, currentYear);
   const selectedStyle = WALLPAPER_STYLES[activeStyleIdx];
 
   // 주별: 7장 모두 있어야 활성화
   // 월별: 해당 월 전체 날짜 수만큼 사진 있어야 활성화
   const isCtaEnabled = wallpaperType === "Week"
     ? Object.keys(weekPhotoMap).length === 7
-    : Object.keys(monthPhotoMap).length === new Date(monthInfo.year, monthInfo.month, 0).getDate();
+    : wallpaperType === "Month"
+    ? Object.keys(monthPhotoMap).length === new Date(monthInfo.year, monthInfo.month, 0).getDate()
+    : daySelected && Object.keys(dayPhotoMap).length > 0;
 
-  const getDownloadParams = useCallback(() => ({
-    frameStyle: selectedStyle,
-    bgColor: activeColorBg,
-    wallpaperType: wallpaperType === "Week" ? "week" as const : "month" as const,
-    year: wallpaperType === "Week" ? weekInfo.year : monthInfo.year,
-    month: wallpaperType === "Week" ? weekInfo.month : monthInfo.month,
-    week: wallpaperType === "Week" ? weekInfo.week : undefined,
-    photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
-    petName,
-  }), [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, weekPhotoMap, monthPhotoMap, petName]);
+  const getDownloadParams = useCallback(() => {
+    if (wallpaperType === "Day") {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const dateStr = `${dayInfo.year}-${pad(dayInfo.month)}-${pad(dayInfo.day)}`;
+      const fullPhotoMap: Record<string, string> = {};
+      if (petId) {
+        // fetch at download time will happen in DownloadingScreen via photoMap
+      }
+      return {
+        frameStyle: selectedStyle,
+        bgColor: activeColorBg,
+        wallpaperType: "day" as const,
+        year: dayInfo.year,
+        month: dayInfo.month,
+        day: dayInfo.day,
+        photoMap: dayPhotoMap,
+        petName,
+        _dateStr: dateStr,
+      };
+    }
+    return {
+      frameStyle: selectedStyle,
+      bgColor: activeColorBg,
+      wallpaperType: wallpaperType === "Week" ? "week" as const : "month" as const,
+      year: wallpaperType === "Week" ? weekInfo.year : monthInfo.year,
+      month: wallpaperType === "Week" ? weekInfo.month : monthInfo.month,
+      week: wallpaperType === "Week" ? weekInfo.week : undefined,
+      photoMap: wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap,
+      petName,
+    };
+  }, [selectedStyle, activeColorBg, wallpaperType, weekInfo, monthInfo, dayInfo, weekPhotoMap, monthPhotoMap, dayPhotoMap, petName, petId]);
 
   const handleCtaClick = useCallback(() => {
     if (!isCtaEnabled || adLoading) return;
@@ -382,13 +453,14 @@ export default function WallpaperScreen() {
                   >
                     <div style={{ width: 375, height: 812, transform: `scale(${dims.activeScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}>
                       <WallpaperFrame
-                        type={wallpaperType === "Week" ? "week" : "month"}
+                        type={wallpaperType === "Week" ? "week" : wallpaperType === "Day" ? "day" : "month"}
                         frameStyle={style}
                         previewContainer={true}
-                        photoMap={wallpaperType === "Week" ? weekPhotoMap : monthPhotoMap}
-                        year={wallpaperType === "Week" ? weekInfo.year : monthInfo.year}
-                        month={wallpaperType === "Week" ? weekInfo.month : monthInfo.month}
+                        photoMap={wallpaperType === "Week" ? weekPhotoMap : wallpaperType === "Day" ? dayPhotoMap : monthPhotoMap}
+                        year={wallpaperType === "Week" ? weekInfo.year : wallpaperType === "Day" ? dayInfo.year : monthInfo.year}
+                        month={wallpaperType === "Week" ? weekInfo.month : wallpaperType === "Day" ? dayInfo.month : monthInfo.month}
                         week={wallpaperType === "Week" ? weekInfo.week : undefined}
+                        day={wallpaperType === "Day" ? dayInfo.day : undefined}
                         petName={petName || "몽치"}
                         bgColor={activeColorBg}
                       />
@@ -425,6 +497,8 @@ export default function WallpaperScreen() {
             <p style={s.ctaHelperText}>
               {wallpaperType === "Week"
                 ? "7일을 모두 업로드해야 다운로드할 수 있어요."
+                : wallpaperType === "Day"
+                ? (daySelected ? "오늘의 이미지 업로드가 필요해요." : "날짜를 선택하면 다운로드할 수 있어요.")
                 : "한달을 모두 업로드해야 다운로드할 수 있어요."}
             </p>
           )}
@@ -459,6 +533,19 @@ export default function WallpaperScreen() {
           onConfirm={(y, m, w) => {
             const maxWeek = weeksInMonth(y, m);
             setWeekInfo({ year: y, month: m, week: Math.min(w, maxWeek) });
+            setShowPicker(false);
+          }}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+      {showPicker && wallpaperType === "Day" && (
+        <CalendarDayPicker
+          initialYear={dayInfo.year}
+          initialMonth={dayInfo.month}
+          initialDay={dayInfo.day}
+          onConfirm={(y, m, d) => {
+            setDayInfo({ year: y, month: m, day: d });
+            setDaySelected(true);
             setShowPicker(false);
           }}
           onClose={() => setShowPicker(false)}

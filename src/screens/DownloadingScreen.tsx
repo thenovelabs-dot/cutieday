@@ -8,6 +8,7 @@ import {
   WEEK_CELLS, MONTH_GRID,
   bgLayers, overlayLayers,
   POSTCARD_MONTH_CELLS, POLAROID_MONTH_X, POLAROID_MONTH_Y, POSTCARD_MON_ROT,
+  bgLayersDay, DAY_CELL, DAY_POSTCARD_ROT,
 } from "../components/WallpaperFrame";
 import type { WeekKey } from "../components/WallpaperFrame";
 
@@ -41,6 +42,7 @@ function drawCoverRotated(
   x: number, y: number, w: number, h: number,
   borderRadius: number,
   rotDeg: number,
+  fit: "cover" | "contain" = "cover",
 ) {
   const cx = x + w / 2, cy = y + h / 2;
   ctx.save();
@@ -53,10 +55,99 @@ function drawCoverRotated(
     ctx.rect(-w / 2, -h / 2, w, h);
   }
   ctx.clip();
-  const scale = Math.max(w / img.width, h / img.height);
+  const scale = fit === "contain"
+    ? Math.min(w / img.width, h / img.height)
+    : Math.max(w / img.width, h / img.height);
   const dw = img.width * scale, dh = img.height * scale;
   ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
   ctx.restore();
+}
+
+async function drawSubtitleCanvasDay(
+  ctx: CanvasRenderingContext2D,
+  frameStyle: WallpaperFrameStyle,
+  year: number,
+  month: number,
+  day: number,
+  petName: string,
+  bgColor: string,
+) {
+  if (["Apple", "Note", "Spark", "Star"].includes(frameStyle)) return;
+
+  let iconImg: HTMLImageElement | null = null;
+  try { iconImg = await loadImgEl("/assets/wallpaper/animal-icon.svg"); } catch { /* ok */ }
+
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#ffffff";
+
+  if (frameStyle === "Default") {
+    const text = `${year}년 ${month}월 ${day}일 ${petName}. 오늘도 귀여웠어`;
+    ctx.font = "400 17px 'Dongle', sans-serif";
+    const textW = ctx.measureText(text).width;
+    const rowW = textW + 5 + 15;
+    const startX = 187.5 - rowW / 2;
+    ctx.fillText(text, startX, 316);
+    if (iconImg) ctx.drawImage(iconImg, startX + textW + 5, 316, 15, 15);
+    return;
+  }
+
+  if (frameStyle === "Polaroid") {
+    const dark = bgColor === "#000000" || bgColor === "#232323";
+    const BLUE = dark ? "#000000" : "#5e96df";
+    const containerLeft = 58.31;
+    const containerWidth = 257.802;
+    const centerX = containerLeft + containerWidth / 2;
+
+    // Line 1
+    ctx.fillStyle = BLUE;
+    ctx.font = "400 20px 'Dongle', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(`${year}년 ${month}월 ${day}일 ${petName}.`, centerX, 615.03);
+
+    // Line 2: 오늘도 귀여웠어 + icon (centered row)
+    ctx.font = "400 15px 'Dongle', sans-serif";
+    const line2Y = 615.03 + 20 * 1.2;
+    const t2 = "오늘도 귀여웠어";
+    const t2W = ctx.measureText(t2).width;
+    const iconSize = 16.041;
+    const gap = 5.729;
+    const rowW = t2W + gap + iconSize;
+    const rowStartX = centerX - rowW / 2;
+    ctx.textAlign = "left";
+    ctx.fillText(t2, rowStartX, line2Y);
+    if (iconImg) ctx.drawImage(iconImg, rowStartX + t2W + gap, line2Y, iconSize, iconSize);
+    return;
+  }
+
+  if (frameStyle === "Postcard") {
+    const lines = [`${year}년`, `${month}월 ${day}일`, petName, "오늘도 귀여웠어"];
+    const iconSize = 30.544;
+    const gap = 8.783;
+    const lineH = 19.286;
+    const totalH = iconSize + gap + lines.length * lineH;
+
+    ctx.save();
+    ctx.translate(245.5, 599);
+    ctx.rotate((13.22 * Math.PI) / 180);
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.font = `400 19.286px 'Dongle', sans-serif`;
+
+    const maxTextW = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    const colW = Math.max(iconSize, maxTextW);
+    const leftX = -colW / 2;
+    const startY = -totalH / 2;
+
+    if (iconImg) ctx.drawImage(iconImg, leftX, startY, iconSize, iconSize);
+
+    let y = startY + iconSize + gap;
+    for (const line of lines) {
+      ctx.fillText(line, leftX, y);
+      y += lineH;
+    }
+    ctx.restore();
+  }
 }
 
 async function drawSubtitleCanvas(
@@ -124,10 +215,11 @@ async function renderWallpaperToBlob(
   photoMap: Record<string, string>,
   bgColor: string,
   frameStyle: WallpaperFrameStyle,
-  type: "week" | "month",
+  type: "week" | "month" | "day",
   year: number,
   month: number,
   week?: number,
+  day?: number,
   petName?: string,
 ): Promise<Blob> {
   const W = 375, H = 812, PX = 3;
@@ -137,17 +229,19 @@ async function renderWallpaperToBlob(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(PX, PX);
 
+  const isDay = type === "day";
   const isWeek = type === "week";
   const effectiveBg = (frameStyle === "Note" && bgColor === "#508FE1") ? "#ffffff" : bgColor;
   const daysInMonth = new Date(year, month, 0).getDate();
-  const cellBr = frameStyle === "Apple" ? 13 : (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8;
+  const cellBr = (isDay && frameStyle === "Apple") ? 38 : (isDay && frameStyle === "Note") ? 36 : (isDay && frameStyle === "Spark") ? 9999 : (isDay && frameStyle === "Star") ? 12 : frameStyle === "Apple" ? 13 : (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8;
 
   // 1. 배경 채우기
   ctx.fillStyle = effectiveBg;
   ctx.fillRect(0, 0, W, H);
 
-  // 2. 배경 SVG 레이어 (프레임 꾸밈요소)
-  for (const l of bgLayers(frameStyle, isWeek, effectiveBg, daysInMonth)) {
+  // 2. 배경 레이어
+  const layers = isDay ? bgLayersDay(frameStyle, effectiveBg) : bgLayers(frameStyle, isWeek, effectiveBg, daysInMonth);
+  for (const l of layers) {
     try {
       const img = await loadImgEl(l.src);
       ctx.drawImage(img, l.x, l.y, l.w, l.h);
@@ -155,7 +249,17 @@ async function renderWallpaperToBlob(
   }
 
   // 3. 포토 셀 그리기
-  if (isWeek) {
+  if (isDay) {
+    const url = photoMap["photo"];
+    if (url) {
+      const img = await loadImageBitmap(url);
+      if (img) {
+        const c = DAY_CELL[frameStyle];
+        const rotDeg = frameStyle === "Postcard" ? DAY_POSTCARD_ROT : 0;
+        drawCoverRotated(ctx, img, c.x, c.y, c.w, c.h, cellBr, rotDeg);
+      }
+    }
+  } else if (isWeek) {
     await Promise.all(WEEK_DAY_KEYS.map(async (key) => {
       const url = photoMap[key];
       if (!url) return;
@@ -200,17 +304,23 @@ async function renderWallpaperToBlob(
     );
   }
 
-  // 4. 오버레이 SVG 레이어 (포토 셀 위에 얹히는 꾸밈요소)
-  for (const l of overlayLayers(frameStyle, isWeek)) {
-    try {
-      const img = await loadImgEl(l.src);
-      ctx.drawImage(img, l.x, l.y, l.w, l.h);
-    } catch { /* 에셋 누락 시 무시 */ }
+  // 4. 오버레이 SVG (Day는 오버레이 없음)
+  if (!isDay) {
+    for (const l of overlayLayers(frameStyle, isWeek)) {
+      try {
+        const img = await loadImgEl(l.src);
+        ctx.drawImage(img, l.x, l.y, l.w, l.h);
+      } catch { /* 에셋 누락 시 무시 */ }
+    }
   }
 
   // 5. 텍스트/자막 오버레이
   await document.fonts.ready;
-  await drawSubtitleCanvas(ctx, frameStyle, isWeek, year, month, week, petName || "");
+  if (isDay) {
+    await drawSubtitleCanvasDay(ctx, frameStyle, year, month, day ?? 1, petName || "", effectiveBg);
+  } else {
+    await drawSubtitleCanvas(ctx, frameStyle, isWeek, year, month, week, petName || "");
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -287,10 +397,11 @@ export default function DownloadingScreen() {
   const params = (current.params ?? {}) as {
     frameStyle?: WallpaperFrameStyle;
     bgColor?: string;
-    wallpaperType?: "week" | "month";
+    wallpaperType?: "week" | "month" | "day";
     year?: number;
     month?: number;
     week?: number;
+    day?: number;
     photoMap?: Record<string, string>;
     petName?: string;
   };
@@ -302,6 +413,7 @@ export default function DownloadingScreen() {
     year = new Date().getFullYear(),
     month = new Date().getMonth() + 1,
     week,
+    day,
     photoMap = {},
     petName = "",
   } = params;
@@ -324,7 +436,7 @@ export default function DownloadingScreen() {
 
     const run = async () => {
       try {
-        const blob = await renderWallpaperToBlob(photoMap, bgColor, frameStyle, wallpaperType, year, month, week, petName);
+        const blob = await renderWallpaperToBlob(photoMap, bgColor, frameStyle, wallpaperType, year, month, week, day, petName);
         blobRef.current = blob;
         setStatus("complete");
       } catch (e) {
@@ -410,6 +522,7 @@ export default function DownloadingScreen() {
                 year={year}
                 month={month}
                 week={week}
+                day={day}
                 photoMap={photoMap}
                 petName={petName}
                 previewContainer={false}
@@ -420,7 +533,7 @@ export default function DownloadingScreen() {
         </div>
 
         {/* 하단 CTA — 항상 하단 고정 */}
-        <div style={{ flexShrink: 0, maxHeight: 80, overflow: "hidden" }}>
+        <div style={{ margin: "0 20px", borderRadius: 16, overflow: "hidden", flexShrink: 0, maxHeight: 72, display: "flex", alignItems: "center" }}>
           <HomeBannerAd adGroupId={(import.meta.env.VITE_ADS_BANNER_DOWNLOADING_GROUP_ID as string | undefined) ?? "ait-ad-test-banner-id"} />
         </div>
         <div style={{ flexShrink: 0 }}>

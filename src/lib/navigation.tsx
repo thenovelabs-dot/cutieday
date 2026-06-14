@@ -34,14 +34,15 @@ export type ScreenParams = {
   ImageAdjust: { uri: string };
   PetEdit: undefined;
   HomeMonth: undefined;
-  Wallpaper: { initialType?: "Week" | "Month"; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number } };
+  Wallpaper: { initialType?: "Week" | "Month" | "Day"; initialWeek?: { year: number; month: number; week: number }; initialMonth?: { year: number; month: number }; initialDay?: { year: number; month: number; day: number } };
   Downloading: {
     frameStyle: string;
     bgColor: string;
-    wallpaperType: "week" | "month";
+    wallpaperType: "week" | "month" | "day";
     year: number;
     month: number;
     week?: number;
+    day?: number;
     photoMap: Record<string, string>;
     petName: string;
     fromAd: boolean;
@@ -73,8 +74,11 @@ export function NavigationProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const devScreen = import.meta.env.DEV
+    ? (new URLSearchParams(window.location.search).get("screen") as Screen | null)
+    : null;
   const [stack, setStack] = useState<NavEntry[]>([
-    { screen: "Intro", params: undefined },
+    { screen: devScreen ?? "Intro", params: undefined },
   ]);
   const [showExitModal, setShowExitModal] = useState(false);
 
@@ -135,20 +139,24 @@ export function NavigationProvider({
   }, []);
 
   useEffect(() => {
-    const removeListener = graniteEvent.addEventListener("backEvent", {
-      onEvent: () => {
-        const currentStack = stackRef.current;
-        if (currentStack.length > 1) {
-          skipPopStateRef.current = true;
-          window.history.back();
-          historyDepthRef.current = Math.max(0, historyDepthRef.current - 1);
-          setStack((prev) => prev.slice(0, -1));
-        } else if (EXIT_ROOT_SCREENS.includes(currentStack[0].screen)) {
-          setShowExitModal(true);
-        }
-      },
-    });
-    return removeListener;
+    try {
+      const removeListener = graniteEvent.addEventListener("backEvent", {
+        onEvent: () => {
+          const currentStack = stackRef.current;
+          if (currentStack.length > 1) {
+            skipPopStateRef.current = true;
+            window.history.back();
+            historyDepthRef.current = Math.max(0, historyDepthRef.current - 1);
+            setStack((prev) => prev.slice(0, -1));
+          } else if (EXIT_ROOT_SCREENS.includes(currentStack[0].screen)) {
+            setShowExitModal(true);
+          }
+        },
+      });
+      return removeListener;
+    } catch {
+      // 토스 앱 외부(브라우저 개발 환경)에서는 네이티브 브릿지 미사용
+    }
   }, []);
 
   const current = stack[stack.length - 1];
