@@ -472,13 +472,26 @@ export default function WallpaperScreen() {
           </div>
 
           {/* 색상 선택 */}
-          <div style={s.colorRow}>
-            {COLOR_OPTIONS.map(({ key, color }) => (
-              <button key={key} style={s.colorDotBtn} onClick={() => setSelectedColor(key)}>
-                <ColorSelectUnit color={color} selected={selectedColor === key} />
-              </button>
-            ))}
-          </div>
+          {(selectedStyle === "Balletcore" || selectedStyle === "Heart" || selectedStyle === "Vintage") ? (
+            <div style={s.colorRow}>
+              <ColorSelectUnit
+                fixedBg={
+                  selectedStyle === "Heart" ? "#d55b5d" :
+                  selectedStyle === "Vintage" ? "#d9b890" :
+                  "#f79fbb"
+                }
+                selected
+              />
+            </div>
+          ) : (
+            <div style={s.colorRow}>
+              {COLOR_OPTIONS.map(({ key, color }) => (
+                <button key={key} style={s.colorDotBtn} onClick={() => setSelectedColor(key)}>
+                  <ColorSelectUnit color={color} selected={selectedColor === key} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
@@ -511,7 +524,7 @@ export default function WallpaperScreen() {
             }}
             onClick={handleCtaClick}
           >
-            {adLoading ? "광고 불러오는 중..." : "다운받기"}
+            {adLoading ? "광고 불러오는 중..." : "광고보고 다운받기"}
           </button>
         </div>
       </div>

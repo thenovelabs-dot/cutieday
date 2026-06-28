@@ -5,7 +5,9 @@ import HomeBannerAd from "../components/HomeBannerAd";
 import WallpaperFrame from "../components/WallpaperFrame";
 import type { WallpaperFrameStyle } from "../components/WallpaperFrame";
 import {
-  WEEK_CELLS, MONTH_GRID,
+  WEEK_CELLS, MONTH_GRID, BALLET_MONTH_GRIDS, balletMonthVariant,
+  HEART_MONTH_CELLS, heartMonthVariant,
+  VINTAGE_MONTH_GRIDS, vintageMonthVariant, vintageOverlays,
   bgLayers, overlayLayers,
   POSTCARD_MONTH_CELLS, POLAROID_MONTH_X, POLAROID_MONTH_Y, POSTCARD_MON_ROT,
   bgLayersDay, DAY_CELL, DAY_POSTCARD_ROT,
@@ -72,7 +74,7 @@ async function drawSubtitleCanvasDay(
   petName: string,
   bgColor: string,
 ) {
-  if (["Apple", "Note", "Spark", "Star"].includes(frameStyle)) return;
+  if (["Apple", "Note", "Spark", "Star", "Balletcore", "Heart", "Vintage"].includes(frameStyle)) return;
 
   let iconImg: HTMLImageElement | null = null;
   try { iconImg = await loadImgEl("/assets/wallpaper/animal-icon.svg"); } catch { /* ok */ }
@@ -159,7 +161,7 @@ async function drawSubtitleCanvas(
   week: number | undefined,
   petName: string,
 ) {
-  if (["Apple", "Note", "Spark", "Star"].includes(frameStyle)) return;
+  if (["Apple", "Note", "Spark", "Star", "Balletcore", "Heart", "Vintage"].includes(frameStyle)) return;
 
   let iconImg: HTMLImageElement | null = null;
   try { iconImg = await loadImgEl("/assets/wallpaper/animal-icon.svg"); } catch { /* ok */ }
@@ -231,9 +233,21 @@ async function renderWallpaperToBlob(
 
   const isDay = type === "day";
   const isWeek = type === "week";
-  const effectiveBg = (frameStyle === "Note" && bgColor === "#508FE1") ? "#ffffff" : bgColor;
+  const effectiveBg = frameStyle === "Balletcore" ? "#ffeff4" : frameStyle === "Heart" ? "#fffbfb" : frameStyle === "Vintage" ? "#c2b19a" : (frameStyle === "Note" && bgColor === "#508FE1") ? "#ffffff" : bgColor;
   const daysInMonth = new Date(year, month, 0).getDate();
-  const cellBr = (isDay && frameStyle === "Apple") ? 38 : (isDay && frameStyle === "Note") ? 36 : (isDay && frameStyle === "Spark") ? 9999 : (isDay && frameStyle === "Star") ? 12 : frameStyle === "Apple" ? 13 : (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8;
+  const cellBr =
+    (isDay && frameStyle === "Heart") ? 32 :
+    (isDay && frameStyle === "Balletcore") ? 40 :
+    (isDay && frameStyle === "Vintage") ? 5 :
+    (isDay && frameStyle === "Apple") ? 38 :
+    (isDay && frameStyle === "Note") ? 36 :
+    (isDay && frameStyle === "Spark") ? 9999 :
+    (isDay && frameStyle === "Star") ? 12 :
+    frameStyle === "Heart" ? (isWeek ? 16 : 6) :
+    frameStyle === "Balletcore" ? (isWeek ? 12 : 4.81) :
+    frameStyle === "Vintage" ? (isWeek ? 3 : 2) :
+    frameStyle === "Apple" ? 13 :
+    (frameStyle === "Postcard" || frameStyle === "Polaroid") ? 0 : 8;
 
   // 1. 배경 채우기
   ctx.fillStyle = effectiveBg;
@@ -290,28 +304,73 @@ async function renderWallpaperToBlob(
         drawCoverRotated(ctx, img, POLAROID_MONTH_X[col], POLAROID_MONTH_Y[row], 37, 43, 0, 0);
       })
     );
-  } else {
-    const g = MONTH_GRID[frameStyle];
-    const cw = g.w / 7, ch = g.h / 5;
+  } else if (frameStyle === "Heart") {
+    const variant = heartMonthVariant(daysInMonth);
+    const heartCells = HEART_MONTH_CELLS[variant];
+    await Promise.all(
+      heartCells.slice(0, daysInMonth).map(async (pos, i) => {
+        const url = photoMap[String(i + 1)];
+        if (!url) return;
+        const img = await loadImageBitmap(url);
+        if (!img) return;
+        drawCoverRotated(ctx, img, pos.x, pos.y, 48, 54, 6, 0);
+      })
+    );
+  } else if (frameStyle === "Vintage") {
+    const g = VINTAGE_MONTH_GRIDS[vintageMonthVariant(daysInMonth)];
+    const cw = g.w / 7;
+    const rows = Math.ceil(daysInMonth / 7);
+    const ch = g.h / rows;
+    const lastRowCount = daysInMonth - (rows - 1) * 7;
     await Promise.all(
       Array.from({ length: daysInMonth }, async (_, i) => {
         const url = photoMap[String(i + 1)];
         if (!url) return;
         const img = await loadImageBitmap(url);
         if (!img) return;
-        drawCoverRotated(ctx, img, g.x + (i % 7) * cw, g.y + Math.floor(i / 7) * ch, cw, ch, cellBr, 0);
+        const row = Math.floor(i / 7);
+        const col = i % 7;
+        const xOffset = (row === rows - 1 && lastRowCount < 7) ? (g.w - lastRowCount * cw) / 2 : 0;
+        drawCoverRotated(ctx, img, g.x + xOffset + col * cw, g.y + row * ch, cw, ch, 2, 0);
+      })
+    );
+  } else {
+    const g = frameStyle === "Balletcore"
+      ? BALLET_MONTH_GRIDS[balletMonthVariant(daysInMonth)]
+      : MONTH_GRID[frameStyle];
+    const cw = g.w / 7;
+    const rows = frameStyle === "Balletcore" ? Math.ceil(daysInMonth / 7) : 5;
+    const ch = g.h / rows;
+    const lastRowCount = daysInMonth - (rows - 1) * 7;
+    await Promise.all(
+      Array.from({ length: daysInMonth }, async (_, i) => {
+        const url = photoMap[String(i + 1)];
+        if (!url) return;
+        const img = await loadImageBitmap(url);
+        if (!img) return;
+        const row = Math.floor(i / 7);
+        const col = i % 7;
+        const xOffset = (frameStyle === "Balletcore" && row === rows - 1 && lastRowCount < 7)
+          ? (g.w - lastRowCount * cw) / 2
+          : 0;
+        drawCoverRotated(ctx, img, g.x + xOffset + col * cw, g.y + row * ch, cw, ch, cellBr, 0);
       })
     );
   }
 
-  // 4. 오버레이 SVG (Day는 오버레이 없음)
-  if (!isDay) {
-    for (const l of overlayLayers(frameStyle, isWeek)) {
-      try {
-        const img = await loadImgEl(l.src);
+  // 4. 오버레이 레이어 (일반 + Vintage 스트리머)
+  const generalOverlays = isDay ? [] : overlayLayers(frameStyle, isWeek);
+  const vType = isDay ? "day" : isWeek ? "week" : "month";
+  const extraOverlays = frameStyle === "Vintage" ? vintageOverlays(vType, daysInMonth) : [];
+  for (const l of [...generalOverlays, ...extraOverlays]) {
+    try {
+      const img = await loadImgEl(l.src);
+      if (l.rot) {
+        drawCoverRotated(ctx, img, l.x, l.y, l.w, l.h, 0, l.rot, "contain");
+      } else {
         ctx.drawImage(img, l.x, l.y, l.w, l.h);
-      } catch { /* 에셋 누락 시 무시 */ }
-    }
+      }
+    } catch { /* 에셋 누락 시 무시 */ }
   }
 
   // 5. 텍스트/자막 오버레이

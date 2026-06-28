@@ -48,20 +48,29 @@ export default function HomeMonthScreen() {
   const todayStr = formatDate(today);
 
   const [viewDate, setViewDate] = useState(() => {
-    const uploaded = sessionStorage.getItem("pendingUploadDate");
-    if (uploaded) {
-      const [y, m] = uploaded.split("-").map(Number);
+    const dateStr = sessionStorage.getItem("pendingUploadDate") ?? sessionStorage.getItem("homeSelectedDate");
+    if (dateStr) {
+      const [y, m] = dateStr.split("-").map(Number);
+      return new Date(y, m - 1, 1);
+    }
+    const homeView = sessionStorage.getItem("homeViewDate");
+    if (homeView) {
+      const [y, m] = homeView.split("-").map(Number);
       return new Date(y, m - 1, 1);
     }
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
-  const [calendarType, setCalendarType] = useState<"Month" | "Week">("Week");
+  const [calendarType, setCalendarType] = useState<"Month" | "Week">(
+    () => (sessionStorage.getItem("pendingCalendarType") as "Month" | "Week")
+      ?? (sessionStorage.getItem("homeCalendarType") as "Month" | "Week")
+      ?? "Month"
+  );
   const [pet, setPet] = useState<Pet | null>(null);
   const [photoMap, setPhotoMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(
-    () => sessionStorage.getItem("pendingUploadDate")
+    () => sessionStorage.getItem("pendingUploadDate") ?? sessionStorage.getItem("homeSelectedDate")
   );
   const [weekInfo, setWeekInfo] = useState<{ year: number; month: number; week: number } | null>(null);
   const [showToast, setShowToast] = useState(false);
@@ -74,10 +83,25 @@ export default function HomeMonthScreen() {
     if (!raw) return;
     sessionStorage.removeItem("pendingUploadToast");
     sessionStorage.removeItem("pendingUploadDate");
+    sessionStorage.removeItem("pendingCalendarType");
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setShowToast(true);
     toastTimerRef.current = setTimeout(() => setShowToast(false), 2000);
   }, []);
+
+  useEffect(() => {
+    if (selectedDateStr !== null) sessionStorage.setItem("homeSelectedDate", selectedDateStr);
+    else sessionStorage.removeItem("homeSelectedDate");
+  }, [selectedDateStr]);
+
+  useEffect(() => {
+    sessionStorage.setItem("homeCalendarType", calendarType);
+  }, [calendarType]);
+
+  useEffect(() => {
+    const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
+    sessionStorage.setItem("homeViewDate", `${viewDate.getFullYear()}-${mm}`);
+  }, [viewDate]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth() + 1;
@@ -142,6 +166,8 @@ export default function HomeMonthScreen() {
         setLoading(false);
         if (pendingPopupRef.current) {
           sessionStorage.removeItem("pendingSuccessPopup");
+          sessionStorage.removeItem("pendingUploadDate");
+          sessionStorage.removeItem("pendingCalendarType");
           setSuccessPopupType(pendingPopupRef.current);
           pendingPopupRef.current = null;
         }
@@ -228,6 +254,7 @@ export default function HomeMonthScreen() {
             const file = e.target.files?.[0];
             if (!file) return;
             e.target.value = "";
+            sessionStorage.setItem("pendingCalendarType", calendarType);
             navigate("ImageAdjust", { uri: URL.createObjectURL(file), date: pendingDateRef.current });
           }}
         />

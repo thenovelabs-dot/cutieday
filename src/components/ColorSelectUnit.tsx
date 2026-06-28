@@ -11,10 +11,11 @@ const BG_MAP: Record<"Brand" | "Black" | "Gray", string> = {
 interface Props {
   color?: "Brand" | "Black" | "Gray";
   selected?: boolean;
+  fixedBg?: string;
 }
 
-export default function ColorSelectUnit({ color = "Brand", selected = false }: Props) {
-  const bg = BG_MAP[color];
+export default function ColorSelectUnit({ color = "Brand", selected = false, fixedBg }: Props) {
+  const bg = fixedBg ?? BG_MAP[color];
   return (
     <div style={{
       position: "relative",
